@@ -1,1 +1,2 @@
-a='hello' 
+a='hello'
+print(a)

@@ -71,9 +71,10 @@ if 'Population' in final_df.columns:
 output_folder = r"C:\Users\willi\Downloads\projetdata\DATA_Science_PROJECT_AirQuality_France\data\cleaned"
 os.makedirs(output_folder, exist_ok=True)
 
-# Sauvegarder uniquement le fichier compressé
-output_path = os.path.join(output_folder, "cleaned_air_quality_with_year.csv.gz")
-final_df.to_csv(output_path, index=False, compression="gzip")
+# Sauvegarder uniquement le fichier 
+output_path = os.path.join(output_folder, "cleaned_air_quality_with_year.csv")
+final_df.to_csv(output_path, index=False)
+
 
 print(" Fusion terminée avec l'année ! Dimension :", final_df.shape)
-print(" Fichier compressé sauvegardé dans :", output_path)
+print(" Fichier  sauvegardé dans :", output_path)

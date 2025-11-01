@@ -77,4 +77,30 @@ final_df.to_csv(output_path, index=False)
 
 
 print(" Fusion terminée avec l'année ! Dimension :", final_df.shape)
-print(" Fichier  sauvegardé dans :", output_path)
+print(" Fichier  sauvegardé dans :", output_path) 
+
+import pandas as pd
+
+# Lire ton dataset (ici, on suppose qu'il s'appelle cleaned_air_quality_with_year.csv)
+df = pd.read_csv(r"C:\Users\willi\Downloads\projetdata\DATA_Science_PROJECT_AirQuality_France\data\cleaned\cleaned_air_quality_with_year.csv")
+
+# Afficher les 5 premières lignes
+print(df.head())
+
+# 1️⃣ Vérifier les valeurs manquantes
+print(" Valeurs manquantes par colonne :")
+print(final_df.isna().sum())
+
+# Optionnel : supprimer les lignes avec NA encore présentes (à utiliser seulement si nécessaire)
+# final_df.dropna(inplace=True)
+
+# 2️⃣ Vérifier les doublons par commune et année
+duplicated_count = final_df.duplicated(subset=['COM Insee', 'Année']).sum()
+print(f"\n Nombre de doublons par 'COM Insee' et 'Année' : {duplicated_count}")
+
+# Optionnel : supprimer les doublons exacts
+# final_df = final_df.drop_duplicates(subset=['COM Insee', 'Année'])
+
+# 3️⃣ Aperçu des statistiques pour les colonnes numériques
+print("\n Statistiques descriptives des colonnes numériques :")
+print(final_df.describe())

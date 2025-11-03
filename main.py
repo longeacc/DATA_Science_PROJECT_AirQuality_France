@@ -59,8 +59,39 @@ if __name__ == "__main__":
     else:
         print("Échec du chargement des données dans le script principal.")
     
-    # Visualization of N02 
-    trace = go.Scatter(x=data['Commune'], y=data['Moyenne annuelle de concentration de NO2 (ug/m3)'], mode='markers')
-    layout = go.Layout(title='NO2 Moyenne Annuelle par Commune', xaxis_title='Commune', yaxis_title='NO2 Moyenne Annuelle')
+    # Visualization of N02
+    data_sorted_commune_2020 = data.sort_values('COM Insee')
+    trace = go.Scatter(x=data_sorted_commune_2020['COM Insee'], y=data['Moyenne annuelle de concentration de NO2 (ug/m3)'], mode='markers')
+    layout = go.Layout( title='NO2 Moyenne Annuelle par COM Insee en 2020', xaxis_title='Commune', yaxis_title='NO2 Moyenne Annuelle',
+    # Rotation des étiquettes de l'axe x
+    xaxis=dict(
+        tickangle=-45,  # Rotation à 45 degrés
+        tickfont=dict(size=10)  # Réduction de la taille de police si nécessaire
+    ),
+    # Ajout d'une annotation pour indiquer que la liste n'est pas complète
+    annotations=[
+        dict(
+            x=0.5,
+            y=-0.2,  # Position en bas du graphique
+            xref='paper',
+            yref='paper',
+            text="Liste non exhaustive : seules certaines communes sont affichées",
+            showarrow=False,
+            font=dict(size=12, style='italic'),
+            align='center'
+        )
+    ],
+    # Ajustement des marges pour accommoder l'annotation et les étiquettes inclinées
+    margin=dict(b=100)  # Marge augmentée en bas
+)
     fig = go.Figure(data=[trace], layout=layout)
-    write_html(fig, file='NO2_moyenne_annuelle.html', auto_open=True, include_plotlyjs='cdn')
+    write_html(fig, file='NO2_moyenne_annuelle_2020.html', auto_open=True, include_plotlyjs='cdn')
+
+
+
+    # Visualization of PM10
+    trace = go.Scatter(x=data_sorted_commune_2020['COM Insee'], y=data['Moyenne annuelle de concentration de PM10 (ug/m3)'], mode='markers')
+    layout = go.Layout(title='PM10 Moyenne Annuelle par Commune en 2020', xaxis_title='COM Insee', yaxis_title='PM10 Moyenne Annuelle')
+    fig = go.Figure(data=[trace], layout=layout)
+    write_html(fig, file='PM10_moyenne_annuelle_2020.html', auto_open=True, include_plotlyjs='cdn')
+

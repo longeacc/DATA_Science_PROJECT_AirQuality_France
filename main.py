@@ -58,7 +58,9 @@ if __name__ == "__main__":
                 print(f"{col}: {missing_values[col]} valeurs manquantes")
     else:
         print("Échec du chargement des données dans le script principal.")
+    
+    # Visualization of N02 
     trace = go.Scatter(x=data['Commune'], y=data['Moyenne annuelle de concentration de NO2 (ug/m3)'], mode='markers')
-    layout = go.Layout(title='NO2 Moyenne Annuelle par Commune', xaxis_title='Commune', yaxis_title='PM10 Moyenne Annuelle')
+    layout = go.Layout(title='NO2 Moyenne Annuelle par Commune', xaxis_title='Commune', yaxis_title='NO2 Moyenne Annuelle')
     fig = go.Figure(data=[trace], layout=layout)
     write_html(fig, file='NO2_moyenne_annuelle.html', auto_open=True, include_plotlyjs='cdn')

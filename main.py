@@ -1,0 +1,64 @@
+import csv
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+import seaborn as sns
+import json
+import os
+from sklearn.model_selection import train_test_split
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.metrics import classification_report, confusion_matrix
+from src.utils.common_functions import read_data
+# Imports optionnels avec gestion des erreurs
+try:
+    import plotly.graph_objects as go
+    import plotly.io as pio
+    from plotly.io import write_html
+    PLOTLY_AVAILABLE = True
+except ImportError:
+    print("Note: plotly n'est pas installé. Pour l'installer, exécutez : pip install plotly")
+    PLOTLY_AVAILABLE = False
+
+# Définir le chemin du fichier
+script_dir = os.path.dirname(os.path.abspath(__file__))
+file_path = os.path.join(script_dir, 'data', 'raw', 'Indicateurs_QualiteAir_France_Commune_2007_Ineris_v.Sep2020.csv')
+
+# Charger les données
+data = read_data.load_data(file_path)
+data = read_data.process_data(data)
+
+if __name__ == "__main__":
+    if data is not None:
+        print("\nDonnées chargées avec succès dans le script principal.")
+        
+        # Afficher les informations sur les colonnes
+        print("\nListe des colonnes :")
+        for i, col in enumerate(data.columns):
+            print(f"{i + 1}. {col}")
+            # Afficher quelques valeurs uniques pour chaque colonne
+            unique_values = data[col].nunique()
+            print(f"   Nombre de valeurs uniques : {unique_values}")
+            print(f"   Exemple de valeurs : {data[col].head().tolist()}\n")
+        
+        print(f"\nDimensions des données : {data.shape}")
+        
+        # Vérifier les types de données
+        print("\nTypes de données par colonne :")
+        print(data.dtypes)
+        
+        # Afficher un résumé statistique pour les colonnes numériques
+        print("\nRésumé statistique des colonnes numériques :")
+        print(data.describe())
+        
+        # Vérifier les valeurs manquantes
+        print("\nNombre de valeurs manquantes par colonne :")
+        missing_values = data.isnull().sum()
+        for col in data.columns:
+            if missing_values[col] > 0:
+                print(f"{col}: {missing_values[col]} valeurs manquantes")
+    else:
+        print("Échec du chargement des données dans le script principal.")
+    trace = go.Scatter(x=data['Commune'], y=data['Moyenne annuelle de concentration de NO2 (ug/m3)'], mode='markers')
+    layout = go.Layout(title='NO2 Moyenne Annuelle par Commune', xaxis_title='Commune', yaxis_title='PM10 Moyenne Annuelle')
+    fig = go.Figure(data=[trace], layout=layout)
+    write_html(fig, file='NO2_moyenne_annuelle.html', auto_open=True, include_plotlyjs='cdn')

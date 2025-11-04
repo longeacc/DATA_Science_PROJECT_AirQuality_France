@@ -27,8 +27,11 @@ file_path = os.path.join(script_dir, 'data', 'raw', 'Indicateurs_QualiteAir_Fran
 data = read_data.load_data(file_path)
 data = read_data.process_data(data)
 
+# Créer les dictionnaires de correspondance commune-INSEE
+commune_to_insee, insee_to_commune = read_data.create_commune_insee_dict(data)
+
 if __name__ == "__main__":
-    if data is not None:
+    if data is not None and commune_to_insee is not None:
         print("\nDonnées chargées avec succès dans le script principal.")
         
         # Afficher les informations sur les colonnes
@@ -59,39 +62,131 @@ if __name__ == "__main__":
     else:
         print("Échec du chargement des données dans le script principal.")
     
-    # Visualization of N02
-    data_sorted_commune_2020 = data.sort_values('COM Insee')
-    trace = go.Scatter(x=data_sorted_commune_2020['COM Insee'], y=data['Moyenne annuelle de concentration de NO2 (ug/m3)'], mode='markers')
-    layout = go.Layout( title='NO2 Moyenne Annuelle par COM Insee en 2020', xaxis_title='Commune', yaxis_title='NO2 Moyenne Annuelle',
-    # Rotation des étiquettes de l'axe x
-    xaxis=dict(
-        tickangle=-45,  # Rotation à 45 degrés
-        tickfont=dict(size=10)  # Réduction de la taille de police si nécessaire
-    ),
-    # Ajout d'une annotation pour indiquer que la liste n'est pas complète
-    annotations=[
-        dict(
-            x=0.5,
-            y=-0.2,  # Position en bas du graphique
-            xref='paper',
-            yref='paper',
-            text="Liste non exhaustive : seules certaines communes sont affichées",
-            showarrow=False,
-            font=dict(size=12, style='italic'),
-            align='center'
-        )
-    ],
+    # Visualization of NO2
+    # Trier les données par code INSEE croissant
+    data_sorted_no2 = data.sort_values('COM Insee', ascending=True)
+    
+    # Créer les listes pour le graphique
+    communes = [insee_to_commune[code] for code in data_sorted_no2['COM Insee']]
+    concentrations = data_sorted_no2['Moyenne annuelle de concentration de NO2 (ug/m3)']
+    
+    # Créer le scatter plot avec Plotly
+    trace = go.Scatter(
+        x=communes,
+        y=concentrations,
+        mode='markers',
+        marker=dict(
+            size=2,
+            color=concentrations,  # Utiliser la concentration pour la couleur
+            colorscale='Viridis',  # Échelle de couleur
+            showscale=True  # Afficher la barre de couleur
+        ),
+        hovertemplate="<b>%{x}</b><br>" +
+                     "NO2: %{y:.1f} µg/m³<br>" +
+                     "Code INSEE: %{customdata}<extra></extra>",
+        customdata=data_sorted_no2['COM Insee']  # Ajouter le code INSEE pour le hover
+    )
+    layout = go.Layout(
+        title=dict(
+            text='Concentration moyenne annuelle en 2007/2020 de NO2 par commune',
+            font=dict(size=24)
+        ),
+        xaxis=dict(
+            title='Commune',
+            tickangle=-45,
+            tickfont=dict(size=10),
+            showgrid=True,
+            gridwidth=1,
+            gridcolor='LightGray'
+        ),
+        yaxis=dict(
+            title='NO2 (µg/m³)',
+            showgrid=True,
+            gridwidth=1,
+            gridcolor='LightGray',
+            zeroline=True,
+            zerolinewidth=2,
+            zerolinecolor='Gray'
+        ),
+        # Ajout d'une annotation pour indiquer que la liste n'est pas complète
+        annotations=[
+            dict(
+                x=0.5,
+                y=-0.3,  # Position en bas du graphique
+                xref='paper',
+                yref='paper',
+                text="Liste des communes triées par code INSEE (ordre géographique)",
+                showarrow=False,
+                font=dict(size=12, style='italic'),
+                align='center'
+            )
+        ],
     # Ajustement des marges pour accommoder l'annotation et les étiquettes inclinées
     margin=dict(b=100)  # Marge augmentée en bas
 )
-    fig = go.Figure(data=[trace], layout=layout)
-    write_html(fig, file='NO2_moyenne_annuelle_2020.html', auto_open=True, include_plotlyjs='cdn')
-
-
+    # Créer et sauvegarder le graphique NO2
+    fig_no2 = go.Figure(data=[trace], layout=layout)
+    write_html(fig_no2, file='NO2_moyenne_annuelle_2007_2020.html', auto_open=True, include_plotlyjs='cdn')
+    print("Graphique NO2 généré avec succès !")
 
     # Visualization of PM10
-    trace = go.Scatter(x=data_sorted_commune_2020['COM Insee'], y=data['Moyenne annuelle de concentration de PM10 (ug/m3)'], mode='markers')
-    layout = go.Layout(title='PM10 Moyenne Annuelle par Commune en 2020', xaxis_title='COM Insee', yaxis_title='PM10 Moyenne Annuelle')
-    fig = go.Figure(data=[trace], layout=layout)
-    write_html(fig, file='PM10_moyenne_annuelle_2020.html', auto_open=True, include_plotlyjs='cdn')
+    data_sorted_pm10 = data.sort_values('COM Insee', ascending=True)
+    communes_pm10 = [insee_to_commune[code] for code in data_sorted_pm10['COM Insee']]
+    concentrations_pm10 = data_sorted_pm10['Moyenne annuelle de concentration de PM10 (ug/m3)']
+    
+    trace_pm10 = go.Scatter(
+        x=communes_pm10,
+        y=concentrations_pm10,
+        mode='markers',
+        marker=dict(
+            size=2,
+            color=concentrations_pm10,
+            colorscale='Viridis',
+            showscale=True
+        ),
+        hovertemplate="<b>%{x}</b><br>" +
+                     "PM10: %{y:.1f} µg/m³<br>" +
+                     "Code INSEE: %{customdata}<extra></extra>",
+        customdata=data_sorted_pm10['COM Insee']
+    )
+    layout_pm10 = go.Layout(
+        title=dict(
+            text='Concentration moyenne annuelle en 2007/2020 de PM10 par commune',
+            font=dict(size=24)
+        ),
+        xaxis=dict(
+            title='Commune',
+            tickangle=-45,
+            tickfont=dict(size=10),
+            showgrid=True,
+            gridwidth=1,
+            gridcolor='LightGray'
+        ),
+        yaxis=dict(
+            title='PM10 (µg/m³)',
+            showgrid=True,
+            gridwidth=1,
+            gridcolor='LightGray',
+            zeroline=True,
+            zerolinewidth=2,
+            zerolinecolor='Gray'
+        ),
+        annotations=[
+            dict(
+                x=0.5,
+                y=-0.3,
+                xref='paper',
+                yref='paper',
+                text="Liste des communes triées par code INSEE (ordre géographique)",
+                showarrow=False,
+                font=dict(size=12, style='italic'),
+                align='center'
+            )
+        ],
+        margin=dict(b=100)  # Marge augmentée en bas
+    )
+    # Créer et sauvegarder le graphique PM10
+    fig_pm10 = go.Figure(data=[trace_pm10], layout=layout_pm10)
+    write_html(fig_pm10, file='PM10_moyenne_annuelle_2007_2020.html', auto_open=True, include_plotlyjs='cdn')
+    print("Graphique PM10 généré avec succès !")
 

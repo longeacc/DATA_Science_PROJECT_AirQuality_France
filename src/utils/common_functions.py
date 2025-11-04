@@ -90,3 +90,68 @@ class read_data:
         except Exception as e:
             print(f"Erreur lors du traitement des données : {str(e)}")
             return None
+
+    @staticmethod
+    def create_commune_insee_dict(df):
+        """
+        Crée un dictionnaire complet des correspondances entre codes INSEE et noms des communes.
+        
+        Args:
+            df (pandas.DataFrame): DataFrame contenant obligatoirement :
+                - 'COM Insee' : colonne avec les codes INSEE (type: str ou int)
+                - 'Commune' : colonne avec les noms des communes (type: str)
+        
+        Returns:
+            tuple: (commune_to_insee, insee_to_commune)
+                - commune_to_insee (dict): {nom_commune (str): code_insee (str)}
+                - insee_to_commune (dict): {code_insee (str): nom_commune (str)}
+        
+        Exemple d'utilisation:
+            >>> commune_to_insee, insee_to_commune = read_data.create_commune_insee_dict(data)
+            >>> code_insee = commune_to_insee["Paris"]
+            >>> nom_commune = insee_to_commune["75056"]
+        """
+        if df is None:
+            print("Erreur : DataFrame non fourni")
+            return None, None
+            
+        if 'COM Insee' not in df.columns or 'Commune' not in df.columns:
+            print("Erreur : Les colonnes 'COM Insee' et 'Commune' sont requises")
+            print(f"Colonnes disponibles : {df.columns.tolist()}")
+            return None, None
+            
+        try:
+            # Convertir les codes INSEE en string pour assurer la cohérence
+            df['COM Insee'] = df['COM Insee'].astype(str)
+            
+            # Supprimer les doublons éventuels
+            df_unique = df[['Commune', 'COM Insee']].drop_duplicates()
+            
+            # Créer les dictionnaires
+            commune_to_insee = dict(zip(df_unique['Commune'], df_unique['COM Insee']))
+            insee_to_commune = dict(zip(df_unique['COM Insee'], df_unique['Commune']))
+            
+            # Vérification et rapport
+            print(f"\nDictionnaires créés avec succès:")
+            print(f"- Nombre total de communes : {len(commune_to_insee)}")
+            print(f"- Nombre de codes INSEE uniques : {len(insee_to_commune)}")
+            
+            if len(commune_to_insee) != len(insee_to_commune):
+                print("\nATTENTION : Certaines communes ont le même code INSEE ou vice-versa")
+            
+            # Afficher quelques exemples
+            print("\nExemples de correspondances :")
+            for commune, insee in list(commune_to_insee.items())[:5]:
+                print(f"Commune: {commune:30} -> Code INSEE: {insee}")
+                
+            print("\nUtilisation des dictionnaires:")
+            print("commune_to_insee['nom_commune'] -> renvoie le code INSEE")
+            print("insee_to_commune['code_insee'] -> renvoie le nom de la commune")
+            
+            return commune_to_insee, insee_to_commune
+            
+        except Exception as e:
+            print(f"Erreur lors de la création des dictionnaires : {str(e)}")
+            print("Détails des colonnes du DataFrame :")
+            print(df.info())
+            return None, None

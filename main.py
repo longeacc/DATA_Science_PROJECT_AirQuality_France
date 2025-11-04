@@ -30,6 +30,12 @@ data = read_data.process_data(data)
 # Créer les dictionnaires de correspondance commune-INSEE
 commune_to_insee, insee_to_commune = read_data.create_commune_insee_dict(data)
 
+
+
+
+
+
+
 if __name__ == "__main__":
     if data is not None and commune_to_insee is not None:
         print("\nDonnées chargées avec succès dans le script principal.")

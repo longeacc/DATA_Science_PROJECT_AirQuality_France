@@ -7,6 +7,13 @@ import json
 from sklearn.model_selection import train_test_split
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.metrics import classification_report, confusion_matrix
+from plotly.offline import plot as write_html
+import sys
+
+# Ajouter le chemin du répertoire parent pour pouvoir importer les modules
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+from visualizations.scatter_plots import create_pollution_scatter
+from visualizations.histograms import create_pollution_histogram
 
 # Functions to charge and load graph abou data
 
@@ -46,11 +53,26 @@ class read_data:
             )
             
             # Vérifier si nous avons le bon nombre de colonnes
-            if len(data.columns) != 12:
-                print(f"ATTENTION : Nombre incorrect de colonnes ({len(data.columns)}). Attendu : 12")
+            if len(data.columns) not in [12, 14]:
+                print(f"ATTENTION : Nombre incorrect de colonnes ({len(data.columns)}). Attendu : 12 ou 14")
                 print("Colonnes trouvées :")
                 print(data.columns.tolist())
-                return KeyError
+                return None
+                
+            # Vérifier les colonnes requises
+            required_columns = [
+                'COM Insee',
+                'Commune',
+                'Population',
+                'Moyenne annuelle de concentration de NO2 (ug/m3)',
+                'Moyenne annuelle de concentration de PM10 (ug/m3)',
+                'Moyenne annuelle de concentration de O3 (ug/m3)'
+            ]
+            missing_columns = [col for col in required_columns if col not in data.columns]
+            if missing_columns:
+                print("ERREUR : Colonnes manquantes :")
+                print(missing_columns)
+                return None
                 
             print("Fichier chargé avec succès!")
             return data
@@ -155,3 +177,111 @@ class read_data:
             print("Détails des colonnes du DataFrame :")
             print(df.info())
             return None, None
+
+
+def load_commune_mappings():
+    """
+    Charge les correspondances entre codes INSEE et noms de communes.
+    
+    Args:
+        year (int): L'année pour laquelle charger les données (par défaut: 2000)
+        
+    Returns:
+        tuple: (commune_to_insee, insee_to_commune) dictionnaires de correspondance
+    """
+    try:
+        # Charger le fichier CSV
+        script_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+        data_path = os.path.join(script_dir, "data", "raw", "Indicateurs_QualiteAir_France_Commune_2000_Ineris_v.Sep2020.csv")
+        
+        # Utiliser la méthode load_data de la classe read_data
+        data = read_data.load_data(data_path)
+        if data is None:
+            raise ValueError("Impossible de charger les données pour les correspondances communes")
+        
+        # Créer les dictionnaires de correspondance
+        commune_to_insee = dict(zip(data['Commune'], data['COM Insee']))
+        insee_to_commune = dict(zip(data['COM Insee'], data['Commune']))
+        
+        return commune_to_insee, insee_to_commune
+        
+    except Exception as e:
+        print(f"Erreur lors du chargement des correspondances communes")
+        return None, None
+
+
+def load_data_for_year(year):
+    """
+    Charge les données pour une année spécifique.
+    
+    Args:
+        year (int): L'année pour laquelle charger les données
+        
+    Returns:
+        pd.DataFrame: Les données pour l'année spécifiée, ou None en cas d'erreur
+    """
+    try:
+        if year == 2006:
+            return None
+        script_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+        data_path = os.path.join(script_dir, "data", "raw", f"Indicateurs_QualiteAir_France_Commune_{year}_Ineris_v.Sep2020.csv")
+        
+        data = read_data.load_data(data_path)
+        if data is not None:
+            data['Année'] = year
+            data = read_data.process_data(data)
+            print(f"Données pour {year} chargées avec succès.")
+            return data
+        return None
+        
+    except Exception as e:
+        print(f"Erreur lors du chargement des données pour {year}: {str(e)}")
+        return None
+
+
+def process_and_visualize_data(data, insee_to_commune):
+    """
+    Traite et visualise les données de pollution de l'air sur plusieurs années.
+    
+    Args:
+        data (pd.DataFrame): Le DataFrame contenant les données
+        insee_to_commune (dict): Dictionnaire de correspondance codes INSEE vers noms de communes
+        
+    Returns:
+        dict: Dictionnaire contenant les figures générées
+    """
+    # Créer le dossier de sortie s'il n'existe pas
+    script_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+    output_dir = os.path.join(script_dir, 'output')
+    os.makedirs(output_dir, exist_ok=True)
+    print(f"\nDossier de sortie créé : {output_dir}")
+    
+    # Dictionnaire pour stocker toutes les figures
+    all_figures = {}
+    
+    # Traiter chaque année
+    for year in sorted(data['Année'].unique()):
+        print(f"\nCréation des visualisations pour l'année {year}...")
+        year_data = data[data['Année'] == year]
+        
+        # Créer les visualisations pour chaque polluant
+        for pollutant in ['NO2', 'PM10', 'O3']:
+            # Graphique de dispersion
+            fig_scatter = create_pollution_scatter(year_data, insee_to_commune, pollutant)
+            
+            # Histogramme
+            fig_hist = create_pollution_histogram(year_data, pollutant)
+            
+            # Sauvegarder les visualisations
+            scatter_file = os.path.join(output_dir, f'{pollutant}_moyenne_annuelle_{year}.html')
+            hist_file = os.path.join(output_dir, f'{pollutant}_histogram_{year}.html')
+            
+            write_html(fig_scatter, scatter_file, auto_open=False, include_plotlyjs='cdn')
+            write_html(fig_hist, hist_file, auto_open=False, include_plotlyjs='cdn')
+            
+            # Stocker les figures
+            all_figures[f'{pollutant}_scatter_{year}'] = fig_scatter
+            all_figures[f'{pollutant}_histogram_{year}'] = fig_hist
+    
+    print("\nToutes les visualisations ont été générées avec succès !")
+    return all_figures

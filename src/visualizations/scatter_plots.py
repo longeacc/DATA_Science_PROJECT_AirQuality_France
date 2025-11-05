@@ -3,12 +3,12 @@ from plotly.io import write_html
 
 def create_pollution_scatter(data, insee_to_commune, pollutant_type):
     """
-    Crée un graphique de dispersion pour NO2 ou PM10
+    Crée un graphique de dispersion pour NO2, PM10 ou O3.
     
     Args:
         data (pd.DataFrame): Le DataFrame contenant les données
         insee_to_commune (dict): Dictionnaire de correspondance codes INSEE vers noms de communes
-        pollutant_type (str): Type de polluant ("NO2" ou "PM10")
+        pollutant_type (str): Type de polluant ("NO2", "PM10" ou "O3")
     
     Returns:
         plotly.graph_objects.Figure: La figure créée
@@ -21,7 +21,7 @@ def create_pollution_scatter(data, insee_to_commune, pollutant_type):
     column_name = f'Moyenne annuelle de concentration de {pollutant_type} (ug/m3)'
     concentrations = data_sorted[column_name]
     populations = data_sorted['Population']
-
+    
     # Créer le graphique
     trace = go.Scatter(
         x=communes,
@@ -42,7 +42,7 @@ def create_pollution_scatter(data, insee_to_commune, pollutant_type):
 
     layout = go.Layout(
         title=dict(
-            text=f'Concentration moyenne annuelle en 2007/2020 de {pollutant_type} par population de commune',
+            text=f'Concentration moyenne annuelle de {pollutant_type} par population de commune',
             font=dict(size=24)
         ),
         xaxis=dict(

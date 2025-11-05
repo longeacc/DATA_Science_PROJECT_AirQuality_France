@@ -1,3 +1,5 @@
+# src/utils/clean_data.py
+
 import pandas as pd
 import os
 import glob
@@ -7,15 +9,29 @@ import re
 # Ignorer le warning FutureWarning sur concat
 warnings.simplefilter(action='ignore', category=FutureWarning)
 
-# Dossier contenant tes fichiers CSV
-data_folder = r"C:\Users\willi\Downloads\Indicateurs_QualiteAir_France_Commune_2000-2015_Ineris_v.Sep2020"
+# 🔹 Chemins relatifs depuis src/utils/ jusqu'à la racine du projet
+base_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
 
-# Lister tous les fichiers CSV
+# Dossier contenant les CSV bruts (data/raw/)
+data_folder = os.path.join(base_dir, "data", "raw")
+
+# Dossier pour sauvegarder le CSV nettoyé (data/cleaned/)
+output_folder = os.path.join(base_dir, "data", "cleaned")
+os.makedirs(output_folder, exist_ok=True)
+
+print("📁 Dossier source :", data_folder)
+print("💾 Dossier de sortie :", output_folder)
+
+# 🔹 Lister tous les fichiers CSV
 all_files = glob.glob(os.path.join(data_folder, "*.csv"))
+
+if not all_files:
+    print("⚠️ Aucun fichier CSV trouvé dans le dossier raw !")
+    exit()
 
 list_of_dfs = []
 
-# Lecture et ajout de l'année
+# 🔹 Lecture des fichiers et ajout de l'année
 for filepath in all_files:
     match = re.search(r'(\d{4})', os.path.basename(filepath))
     year = int(match.group(1)) if match else None
@@ -24,7 +40,7 @@ for filepath in all_files:
     df['Année'] = year
     list_of_dfs.append(df)
 
-# Harmonisation des colonnes
+# 🔹 Harmonisation des colonnes
 all_columns = set()
 for df in list_of_dfs:
     all_columns.update(df.columns)
@@ -36,10 +52,10 @@ for i, df in enumerate(list_of_dfs):
             df[col] = pd.NA
     list_of_dfs[i] = df[all_columns]
 
-# Fusionner tous les fichiers
+# 🔹 Fusionner tous les fichiers
 final_df = pd.concat(list_of_dfs, ignore_index=True)
 
-# Colonnes pour lesquelles on remplace les NA par la médiane
+# 🔹 Colonnes polluants pour lesquelles on remplace les NA par la médiane
 pollutants_cols = [
     'Moyenne annuelle de concentration de PM25 (ug/m3)',
     'Moyenne annuelle de concentration de PM25 ponderee par la population (ug/m3)',
@@ -67,40 +83,13 @@ if 'COM Insee' in final_df.columns:
 if 'Population' in final_df.columns:
     final_df['Population'].fillna(0, inplace=True)
 
-# Créer le dossier de sortie si nécessaire
-output_folder = r"C:\Users\willi\Downloads\projetdata\DATA_Science_PROJECT_AirQuality_France\data\cleaned"
-os.makedirs(output_folder, exist_ok=True)
+# 🔹 Vérifier les doublons par commune et année
+duplicated_count = final_df.duplicated(subset=['COM Insee', 'Année']).sum()
+print(f"🔹 Nombre de doublons par 'COM Insee' et 'Année' : {duplicated_count}")
 
-# Sauvegarder uniquement le fichier 
+# 🔹 Sauvegarder le fichier nettoyé
 output_path = os.path.join(output_folder, "cleaned_air_quality_with_year.csv")
 final_df.to_csv(output_path, index=False)
 
-
-print(" Fusion terminée avec l'année ! Dimension :", final_df.shape)
-print(" Fichier  sauvegardé dans :", output_path) 
-
-import pandas as pd
-
-# Lire ton dataset (ici, on suppose qu'il s'appelle cleaned_air_quality_with_year.csv)
-df = pd.read_csv(r"C:\Users\willi\Downloads\projetdata\DATA_Science_PROJECT_AirQuality_France\data\cleaned\cleaned_air_quality_with_year.csv")
-
-# Afficher les 5 premières lignes
-print(df.head())
-
-# 1️⃣ Vérifier les valeurs manquantes
-print(" Valeurs manquantes par colonne :")
-print(final_df.isna().sum())
-
-# Optionnel : supprimer les lignes avec NA encore présentes (à utiliser seulement si nécessaire)
-# final_df.dropna(inplace=True)
-
-# 2️⃣ Vérifier les doublons par commune et année
-duplicated_count = final_df.duplicated(subset=['COM Insee', 'Année']).sum()
-print(f"\n Nombre de doublons par 'COM Insee' et 'Année' : {duplicated_count}")
-
-# Optionnel : supprimer les doublons exacts
-# final_df = final_df.drop_duplicates(subset=['COM Insee', 'Année'])
-
-# 3️⃣ Aperçu des statistiques pour les colonnes numériques
-print("\n Statistiques descriptives des colonnes numériques :")
-print(final_df.describe())
+print("✅ Fusion et nettoyage terminés ! Dimension du DataFrame :", final_df.shape)
+print("💾 Fichier sauvegardé dans :", output_path)

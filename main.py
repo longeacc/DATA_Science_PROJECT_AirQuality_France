@@ -51,13 +51,27 @@ def main():
             # Afficher un résumé des données
             print(f"\nDimensions totales des données : {data.shape}")
             print("\nRésumé statistique des colonnes numériques :")
-            columns_to_describe = [
+            
+            # Définir les colonnes pour le résumé statistique
+            colonnes_stats = [
                 'Moyenne annuelle de concentration de NO2 (ug/m3)',
                 'Moyenne annuelle de concentration de PM10 (ug/m3)',
                 'Moyenne annuelle de concentration de O3 (ug/m3)',
+                'Moyenne annuelle de somo 35 (ug/m3.jour)',
+                'Moyenne annuelle d\'AOT 40 (ug/m3.heure)',
                 'Population'
             ]
-            print(data[columns_to_describe].describe())
+            
+            # Ajouter PM2.5 pour les années >= 2009
+            données_récentes = data[data['Année'] >= 2009].copy()
+            if 'Moyenne annuelle de concentration de PM25 (ug/m3)' in données_récentes.columns:
+                print("\nRésumé statistique pour PM25 (2009-2015) :")
+                print(données_récentes['Moyenne annuelle de concentration de PM25 (ug/m3)'].describe())
+            
+            # Résumé pour les autres polluants (toutes années)
+            print("\nRésumé statistique pour les autres polluants (2000-2015) :")
+            colonnes_disponibles = [col for col in colonnes_stats if col in data.columns]
+            print(data[colonnes_disponibles].describe())
             
             # Créer le dossier de sortie s'il n'existe pas
             script_dir = os.path.dirname(os.path.abspath(__file__))
@@ -65,28 +79,57 @@ def main():
             os.makedirs(output_dir, exist_ok=True)
             print(f"\nDossier de sortie créé : {output_dir}")
             
-            # Créer les visualisations pour chaque année
+            # Définir les polluants et leurs périodes
             print("\nCréation des visualisations...")
             années = sorted(data['Année'].unique())
-            polluants = ['NO2', 'PM10', 'O3']
+            polluants_tous = ['NO2', 'PM10', 'O3', 'Somo 35', 'AOT 40']  # Polluants pour 2000-2015
+            polluant_2009 = 'PM25'  # Polluant uniquement pour 2009-2015
+            
+            # Mapping des noms de polluants vers les noms de colonnes exacts du CSV
+            noms_colonnes = {
+                'NO2': 'Moyenne annuelle de concentration de NO2 (ug/m3)',
+                'PM10': 'Moyenne annuelle de concentration de PM10 (ug/m3)',
+                'O3': 'Moyenne annuelle de concentration de O3 (ug/m3)',
+                'Somo 35': 'Moyenne annuelle de somo 35 (ug/m3.jour)',
+                'AOT 40': "Moyenne annuelle d'AOT 40 (ug/m3.heure)",
+                'PM25': 'Moyenne annuelle de concentration de PM25 (ug/m3)'
+            }
             
             for année in années:
                 print(f"\nTraitement de l'année {année}...")
                 # Filtrer les données pour l'année en cours
                 données_année = data[data['Année'] == année]
                 
-                for polluant in polluants:
+                # Déterminer les polluants à traiter pour cette année
+                polluants_à_traiter = polluants_tous.copy()  # NO2, PM10, O3, Somo35, AOT40 pour toutes les années
+                if année >= 2009:
+                    polluants_à_traiter.append(polluant_2009)  # Ajouter PM25 uniquement à partir de 2009
+                
+                for polluant in polluants_à_traiter:
+                    # Obtenir le nom exact de la colonne depuis le mapping
+                    colonne = noms_colonnes[polluant]
+                    
+                    # Vérifier si les données sont disponibles pour ce polluant
+                    if colonne not in données_année.columns:
+                        print(f"  Données non disponibles pour {polluant} en {année}")
+                        continue
+                        
                     print(f"  Génération des graphiques pour {polluant}...")
                     
-                    # Créer et sauvegarder le graphique de dispersion
-                    fig_scatter = create_pollution_scatter(données_année, insee_to_commune, polluant)
-                    scatter_file = os.path.join(output_dir, f'{polluant}_moyenne_annuelle_{année}.html')
-                    write_html(fig_scatter, scatter_file, auto_open=False, include_plotlyjs='cdn')
-                    
-                    # Créer et sauvegarder l'histogramme
-                    fig_hist = create_pollution_histogram(données_année, polluant)
-                    hist_file = os.path.join(output_dir, f'{polluant}_histogram_{année}.html')
-                    write_html(fig_hist, hist_file, auto_open=False, include_plotlyjs='cdn')
+                    try:
+                        # Créer et sauvegarder le graphique de dispersion
+                        fig_scatter = create_pollution_scatter(données_année, insee_to_commune, polluant)
+                        scatter_file = os.path.join(output_dir, f'{polluant}_moyenne_annuelle_{année}.html')
+                        write_html(fig_scatter, scatter_file, auto_open=False, include_plotlyjs='cdn')
+                        
+                        # Créer et sauvegarder l'histogramme
+                        fig_hist = create_pollution_histogram(données_année, polluant)
+                        hist_file = os.path.join(output_dir, f'{polluant}_histogram_{année}.html')
+                        write_html(fig_hist, hist_file, auto_open=False, include_plotlyjs='cdn')
+                        
+                        print(f"  ✓ Graphiques générés avec succès pour {polluant}")
+                    except Exception as e:
+                        print(f"  ✗ Erreur lors de la génération des graphiques pour {polluant} : {str(e)}")
             
             print("\nToutes les visualisations ont été générées avec succès !")
             print("Les fichiers HTML ont été créés dans le dossier 'output'.")

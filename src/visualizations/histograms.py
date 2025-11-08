@@ -3,7 +3,7 @@ from plotly.io import write_html
 
 def create_pollution_histogram(data, pollutant_type):
     """
-    Crée un histogramme pour NO2, PM10 ou O3.
+    Crée un histogramme pour NO2, PM10 , O3, Somo35, AOT 40 ou PM25.
     
     Args:
         data (pd.DataFrame): Le DataFrame contenant les données
@@ -12,7 +12,14 @@ def create_pollution_histogram(data, pollutant_type):
     Returns:
         plotly.graph_objects.Figure: La figure créée
     """
-    column_name = f'Moyenne annuelle de concentration de {pollutant_type} (ug/m3)'
+    if pollutant_type == 'Somo 35':
+        column_name = 'Moyenne annuelle de somo 35 (ug/m3.jour)'
+    elif pollutant_type == 'AOT 40':
+        column_name = "Moyenne annuelle d'AOT 40 (ug/m3.heure)"
+    elif pollutant_type == 'PM25':
+        column_name = 'Moyenne annuelle de concentration de PM25 (ug/m3)'
+    else:
+        column_name = f'Moyenne annuelle de concentration de {pollutant_type} (ug/m3)'
     values = data[column_name]
 
     trace = go.Histogram(
@@ -30,7 +37,9 @@ def create_pollution_histogram(data, pollutant_type):
             font=dict(size=24)
         ),
         xaxis=dict(
-            title=f'Concentration de {pollutant_type} (µg/m³)',
+            title='Concentration de SOMO 35 (µg/m³)' if pollutant_type == 'SOMO 35'
+            else 'Concentration de AOT 40 (µg/m³)' if pollutant_type == 'AOT 40'
+            else f'Concentration de {pollutant_type} (µg/m³)',  
             showgrid=True,
             gridwidth=1,
             gridcolor='LightGray'

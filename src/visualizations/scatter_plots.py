@@ -18,7 +18,14 @@ def create_pollution_scatter(data, insee_to_commune, pollutant_type):
     
     # Préparer les données
     communes = [insee_to_commune[code] for code in data_sorted['COM Insee']]
-    column_name = f'Moyenne annuelle de concentration de {pollutant_type} (ug/m3)'
+    if pollutant_type == 'Somo 35':
+        column_name = 'Moyenne annuelle de somo 35 (ug/m3.jour)'
+    elif pollutant_type == 'AOT 40':
+        column_name = "Moyenne annuelle d'AOT 40 (ug/m3.heure)"
+    elif pollutant_type == 'PM25':
+        column_name = 'Moyenne annuelle de concentration de PM25 (ug/m3)'
+    else:
+        column_name = f'Moyenne annuelle de concentration de {pollutant_type} (ug/m3)'
     concentrations = data_sorted[column_name]
     populations = data_sorted['Population']
     
@@ -54,7 +61,9 @@ def create_pollution_scatter(data, insee_to_commune, pollutant_type):
             gridcolor='LightGray'
         ),
         yaxis=dict(
-            title=f'{pollutant_type} (µg/m³)',
+            title='Concentration de SOMO 35 (µg/m³)' if pollutant_type == 'SOMO 35'
+            else 'Concentration de AOT 40 (µg/m³)' if pollutant_type == 'AOT 40'
+            else f'Concentration de {pollutant_type} (µg/m³)', 
             showgrid=True,
             gridwidth=1,
             gridcolor='LightGray'

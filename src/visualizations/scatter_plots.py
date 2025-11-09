@@ -13,8 +13,9 @@ def create_pollution_scatter(data, insee_to_commune, pollutant_type):
     Returns:
         plotly.graph_objects.Figure: La figure créée
     """
-    # Trier les communes par population croissante
-    data_sorted = data.sort_values('Population', ascending=True)
+    # Filtrer les communes avec plus de 1500 habitants et trier par population
+    data_filtered = data[data['Population'] > 1500]
+    data_sorted = data_filtered.sort_values('Population', ascending=True)
     
     # Préparer les données
     communes = [insee_to_commune[code] for code in data_sorted['COM Insee']]
@@ -38,7 +39,7 @@ def create_pollution_scatter(data, insee_to_commune, pollutant_type):
         marker=dict(
             size=2,
             color=concentrations,
-            colorscale='Viridis',
+            colorscale=[[0, 'rgb(0,0,255)'], [1, 'rgb(255,0,0)']],  # Bleu à Rouge
             showscale=True
         ),
         hovertemplate="<b>%{x}</b><br>" +
@@ -53,7 +54,7 @@ def create_pollution_scatter(data, insee_to_commune, pollutant_type):
             font=dict(size=24)
         ),
         xaxis=dict(
-            title='Population des communes',
+            title='Population des communes > 1500 Hab.',
             tickangle=-45,
             tickfont=dict(size=10),
             showgrid=True,

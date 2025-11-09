@@ -26,7 +26,7 @@ def create_pollution_histogram(data, pollutant_type):
         x=values,
         name=f'Distribution {pollutant_type}',
         nbinsx=30,
-        marker_color='rgb(55, 83, 109)',
+        marker_color='rgb(70, 130, 180)',  # Bleu acier, plus visible
         hovertemplate="<b>Concentration</b>: %{x:.1f} µg/m³<br>" +
                      "Nombre de communes: %{y}<extra></extra>"
     )

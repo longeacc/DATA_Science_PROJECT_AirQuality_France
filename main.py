@@ -8,6 +8,8 @@ from plotly.io import write_html
 from src.utils.common_functions import load_commune_mappings, load_data_for_year
 from src.visualizations.scatter_plots import create_pollution_scatter
 from src.visualizations.histograms import create_pollution_histogram
+from src.visualizations.superpose_scatter_plots import create_pollution_scatter_animation
+from src.visualizations.superpose_histograms import create_pollution_histogram_animation
 
 
 def main():
@@ -130,6 +132,45 @@ def main():
                         print(f"  ✓ Graphiques générés avec succès pour {polluant}")
                     except Exception as e:
                         print(f"  ✗ Erreur lors de la génération des graphiques pour {polluant} : {str(e)}")
+            
+            # Générer les visualisations animées pour chaque polluant
+            print("\nCréation des visualisations animées...")
+            for polluant in polluants_tous:
+                try:
+                    print(f"  Génération des graphiques animés pour {polluant}...")
+                    
+                    # Créer et sauvegarder le graphique de dispersion animé
+                    fig_scatter_anim = create_pollution_scatter_animation(data, insee_to_commune, polluant)
+                    scatter_anim_file = os.path.join(output_dir, f'{polluant}_evolution_annuelle_scatter.html')
+                    write_html(fig_scatter_anim, scatter_anim_file, auto_open=False, include_plotlyjs='cdn')
+                    
+                    # Créer et sauvegarder l'histogramme animé
+                    fig_hist_anim = create_pollution_histogram_animation(data, polluant)
+                    hist_anim_file = os.path.join(output_dir, f'{polluant}_evolution_annuelle_histogram.html')
+                    write_html(fig_hist_anim, hist_anim_file, auto_open=False, include_plotlyjs='cdn')
+                    
+                    print(f"  ✓ Graphiques animés générés avec succès pour {polluant}")
+                except Exception as e:
+                    print(f"  ✗ Erreur lors de la génération des graphiques animés pour {polluant} : {str(e)}")
+            
+            # Générer les visualisations animées pour PM2.5 (2009-2015)
+            if 'Moyenne annuelle de concentration de PM25 (ug/m3)' in données_récentes.columns:
+                try:
+                    print(f"  Génération des graphiques animés pour PM2.5 (2009-2015)...")
+                    
+                    # Créer et sauvegarder le graphique de dispersion animé
+                    fig_scatter_anim = create_pollution_scatter_animation(données_récentes, insee_to_commune, 'PM25')
+                    scatter_anim_file = os.path.join(output_dir, 'PM25_evolution_annuelle_scatter.html')
+                    write_html(fig_scatter_anim, scatter_anim_file, auto_open=False, include_plotlyjs='cdn')
+                    
+                    # Créer et sauvegarder l'histogramme animé
+                    fig_hist_anim = create_pollution_histogram_animation(données_récentes, 'PM25')
+                    hist_anim_file = os.path.join(output_dir, 'PM25_evolution_annuelle_histogram.html')
+                    write_html(fig_hist_anim, hist_anim_file, auto_open=False, include_plotlyjs='cdn')
+                    
+                    print(f"  ✓ Graphiques animés générés avec succès pour PM2.5")
+                except Exception as e:
+                    print(f"  ✗ Erreur lors de la génération des graphiques animés pour PM2.5 : {str(e)}")
             
             print("\nToutes les visualisations ont été générées avec succès !")
             print("Les fichiers HTML ont été créés dans le dossier 'output'.")

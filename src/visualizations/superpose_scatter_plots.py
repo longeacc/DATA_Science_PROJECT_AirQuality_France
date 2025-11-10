@@ -1,188 +1,116 @@
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
-import pandas as pd
-import json
 import os
+from bs4 import BeautifulSoup
+import re
+import ast
 
-def create_pollution_scatter_animation(data, insee_to_commune, pollutant_type):
-    """
-    Crée un graphique de dispersion animé pour visualiser l'évolution d'un polluant de 2000 à 2015.
-    
-    Args:
-        data (pd.DataFrame): Le DataFrame contenant les données de toutes les années
-        insee_to_commune (dict): Dictionnaire de correspondance codes INSEE vers noms de communes
-        pollutant_type (str): Type de polluant
-    
-    Returns:
-        plotly.graph_objects.Figure: La figure créée avec animation
-    """
-    # Filtrer les communes avec plus de 1500 habitants
-    data = data[data['Population'] > 1500]
-    
-    # Déterminer le nom de la colonne selon le type de polluant
-    if pollutant_type == 'Somo 35':
-        column_name = 'Moyenne annuelle de somo 35 (ug/m3.jour)'
-    elif pollutant_type == 'AOT 40':
-        column_name = "Moyenne annuelle d'AOT 40 (ug/m3.heure)"
-    else:
-        column_name = f'Moyenne annuelle de concentration de {pollutant_type} (ug/m3)'
-    
-    # Créer la figure
-    fig = go.Figure()
-    
-    # Liste des années disponibles (en excluant 2006)
-    years = sorted(list(set(data['Année'].unique()) - {2006}))
-    
-    # Pour chaque année, ajouter une trace (initialement invisible)
-    for year in years:
-        year_data = data[data['Année'] == year].sort_values('Population', ascending=True)
-        communes = [insee_to_commune[code] for code in year_data['COM Insee']]
-        concentrations = year_data[column_name]
-        populations = year_data['Population']
-        
-        fig.add_trace(
-            go.Scatter(
-                x=communes,
-                y=concentrations,
-                mode='markers',
-                name=f'Mesures {pollutant_type} - {year}',
-                marker=dict(
-                    size=2,
-                    color=concentrations,
-                    colorscale=[[0, 'rgb(0,0,255)'], [1, 'rgb(255,0,0)']],
-                    showscale=True if year == years[-1] else False
-                ),
-                hovertemplate="<b>%{x}</b><br>" +
-                             f"{pollutant_type}: %{{y:.1f}} µg/m³<br>" +
-                             "Population: %{customdata:,.0f} hab.<br>" +
-                             f"Année: {year}<extra></extra>",
-                customdata=populations,
-                visible=False
-            )
-        )
-    
-    # Rendre la première trace visible
-    fig.data[0].visible = True
-    
+def extract_data_from_html(file_path):
+    try:
+        with open(file_path, 'r', encoding='utf-8') as file:
+            content = file.read()
+            # Rechercher le pattern des données dans le script Plotly
+            data_match = re.search(r'var data = \[(.*?)\];', content, re.DOTALL)
+            if data_match:
+                data_str = data_match.group(1)
+                # Extraire x et y des données
+                x_match = re.search(r'"x":\s*(\[.*?\])', data_str)
+                y_match = re.search(r'"y":\s*(\[.*?\])', data_str)
+                if x_match and y_match:
+                    try:
+                        # Nettoyer et évaluer les données de façon sûre
+                        x_data = ast.literal_eval(x_match.group(1))
+                        y_data = ast.literal_eval(y_match.group(1))
+                        return x_data, y_data
+                    except Exception as e:
+                        print(f"Erreur lors de l'évaluation des données pour {file_path}: {e}")
+    except Exception as e:
+        print(f"Erreur lors de la lecture du fichier {file_path}: {e}")
+    return [], []
+
+def create_superposed_plots():
+    output_dir = "../../output"
+    pollutants = ["NO2", "AOT 40","PM10","PM25","O3","somo 35"]
+    years = list(range(2000, 2016))
+    years.remove(2006)  # Année manquante
+
+    # Créer une figure avec sous-graphiques (un pour chaque polluant)
+    fig = make_subplots(rows=3, cols=2, subplot_titles=pollutants)
+
+    # Créer un dictionnaire pour stocker toutes les traces
+    all_traces = {pollutant: {} for pollutant in pollutants}
+
+    # Charger toutes les données
+    for pollutant in pollutants:
+        for year in years:
+            filename = f"{pollutant}_moyenne_annuelle_{year}.html"
+            file_path = os.path.join(output_dir, filename)
+            if os.path.exists(file_path):
+                x_data, y_data = extract_data_from_html(file_path)
+                if x_data and y_data:
+                    trace = go.Scatter(
+                        x=x_data,
+                        y=y_data,
+                        mode='markers',
+                        name=f'{year}',
+                        visible=True if year == years[0] else False
+                    )
+                    all_traces[pollutant][year] = trace
+
+    # Ajouter les traces aux sous-graphiques
+    for i, pollutant in enumerate(pollutants):
+        # Calculer la position du sous-graphique
+        row = (i // 2) + 1
+        col = (i % 2) + 1
+        for year in years:
+            if year in all_traces[pollutant]:
+                fig.add_trace(all_traces[pollutant][year], row=row, col=col)
+
     # Créer les steps pour le slider
     steps = []
     for i, year in enumerate(years):
         step = dict(
             method="update",
             args=[{"visible": [False] * len(fig.data)},
-                  {"title": f"Concentration moyenne annuelle de {pollutant_type} par commune - {year}"}],
+                 {"title": f"Données pour l'année {year}"}],
             label=str(year)
         )
-        step["args"][0]["visible"][i] = True
+        # Rendre visible uniquement les traces correspondant à l'année sélectionnée
+        for trace_idx in range(len(fig.data)):
+            # Calculer l'année correspondante à cette trace
+            pollutant_idx = trace_idx // len(years)
+            year_idx = trace_idx % len(years)
+            if pollutant_idx < len(pollutants):  # Vérifier si l'index est valide
+                pollutant = pollutants[pollutant_idx]
+                if year in all_traces[pollutant] and year == years[year_idx]:
+                    step["args"][0]["visible"][trace_idx] = True
         steps.append(step)
-    
-    # Créer le slider
+
+    # Ajouter le slider
     sliders = [dict(
         active=0,
         currentvalue={"prefix": "Année: "},
         pad={"t": 50},
         steps=steps
     )]
-    
-    # Préparation du titre et des unités selon le type de polluant
-    if pollutant_type == 'Somo 35':
-        titre_global = 'Valeurs de SOMO35 en fonction de la population (2000-2015)'
-        unite = 'µg/m³·jour'
-        hover_text = "SOMO35"
-    elif pollutant_type == 'AOT 40':
-        titre_global = 'Valeurs d\'AOT40 en fonction de la population (2000-2015)'
-        unite = 'µg/m³·heure'
-        hover_text = "AOT40"
-    elif pollutant_type == 'PM25':
-        titre_global = 'Concentration de PM2.5 en fonction de la population (2000-2015)'
-        unite = 'µg/m³'
-        hover_text = "PM2.5"
-    else:
-        titre_global = f'Concentration de {pollutant_type} en fonction de la population (2000-2015)'
-        unite = 'µg/m³'
-        hover_text = pollutant_type
 
-    # Mise à jour des textes de survol pour tous les points
-    for trace in fig.data:
-        trace.hovertemplate = (
-            "<b>%{text}</b><br>" +
-            f"{hover_text}: %{{y:.1f}} {unite}<br>" +
-            "Population: %{x:,.0f} hab.<br>" +
-            f"Année: {trace.name.split(' - ')[1]}<extra></extra>"
-        )
-
-    # Créer les steps pour le slider
-    steps = []
-    for year in years:
-        step = dict(
-            method="update",
-            args=[{"visible": [False] * len(fig.data)}],
-            label=str(year)
-        )
-        step["args"][0]["visible"][years.index(year)] = True
-        steps.append(step)
-
-    # Mise à jour du layout
+    # Mise à jour de la mise en page
     fig.update_layout(
-        title=dict(
-            text=titre_global,
-            font=dict(size=24),
-            y=0.95  # Position du titre principal en haut
-        ),
-        margin=dict(t=150),  # Marge supérieure pour le titre et le slider
-        xaxis=dict(
-            title='Population (habitants)',
-            type='log',  # Échelle logarithmique pour la population
-            showgrid=True,
-            gridwidth=1,
-            gridcolor='LightGray'
-        ),
-        yaxis=dict(
-            title=f'Valeur ({unite})',
-            showgrid=True,
-            gridwidth=1,
-            gridcolor='LightGray'
-        ),
-        showlegend=False,
-        sliders=[dict(
-            active=0,
-            currentvalue={"prefix": "Année: ", "xanchor": "right"},
-            pad={"t": 0, "b": 10},
-            yanchor="top",
-            y=0.85,  # Position du slider sous le titre principal
-            x=0.05,
-            len=0.9,  # Longueur du slider
-            steps=steps
-        )]
+        height=800,
+        sliders=sliders,
+        title_text="Évolution des polluants par année",
+        showlegend=False
     )
-    
-    
-    return fig
+
+    # Mise à jour des axes
+    for i, pollutant in enumerate(pollutants):
+        row = (i // 2) + 1
+        col = (i % 2) + 1
+        fig.update_xaxes(title_text="Communes > 1500 habitants", row=row, col=col)
+        fig.update_yaxes(title_text=f"Concentration en {pollutant}", row=row, col=col)
+
+    # Sauvegarder la figure interactive
+    fig.write_html(f"{'_'.join(pollutants)}_superposed_scatter_plots.html")
 
 if __name__ == "__main__":
-    # Liste des polluants à traiter
-    polluants = ['NO2', 'PM10', 'O3']
-    
-    # Dossier de sortie des graphiques
-    output_dir = '../output'
-    os.makedirs(output_dir, exist_ok=True)
-    
-    # Charger les données
-    data_file = '../data/processed/pollution_data_all_years.csv'
-    insee_file = '../data/processed/insee_to_commune.json'
-    
-    data = pd.read_csv(data_file)
-    with open(insee_file, 'r', encoding='utf-8') as f:
-        insee_to_commune = json.load(f)
-    
-    # Générer les scatter plots superposés pour chaque polluant
-    for polluant in polluants:
-        print(f"Génération du scatter plot superposé pour {polluant}...")
-        try:
-            fig = create_pollution_scatter_animation(data, insee_to_commune, polluant)
-            fig.write_html(os.path.join(output_dir, f'{polluant}_scatter_superposes.html'))
-            print(f"  ✓ Scatter plot superposé généré pour {polluant}")
-        except Exception as e:
-            print(f"  ✗ Erreur lors de la génération du scatter plot superposé pour {polluant}: {str(e)}")
-    
-    print("\nTerminé ! Les graphiques de moyennes annuelles superposés ont été générés dans le dossier 'output'.")
+    create_superposed_plots()

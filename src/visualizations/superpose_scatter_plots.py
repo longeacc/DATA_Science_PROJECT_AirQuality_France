@@ -84,28 +84,78 @@ def create_pollution_scatter_animation(data, insee_to_commune, pollutant_type):
         steps=steps
     )]
     
+    # Préparation du titre et des unités selon le type de polluant
+    if pollutant_type == 'Somo 35':
+        titre_global = 'Valeurs de SOMO35 en fonction de la population (2000-2015)'
+        unite = 'µg/m³·jour'
+        hover_text = "SOMO35"
+    elif pollutant_type == 'AOT 40':
+        titre_global = 'Valeurs d\'AOT40 en fonction de la population (2000-2015)'
+        unite = 'µg/m³·heure'
+        hover_text = "AOT40"
+    elif pollutant_type == 'PM25':
+        titre_global = 'Concentration de PM2.5 en fonction de la population (2000-2015)'
+        unite = 'µg/m³'
+        hover_text = "PM2.5"
+    else:
+        titre_global = f'Concentration de {pollutant_type} en fonction de la population (2000-2015)'
+        unite = 'µg/m³'
+        hover_text = pollutant_type
+
+    # Mise à jour des textes de survol pour tous les points
+    for trace in fig.data:
+        trace.hovertemplate = (
+            "<b>%{text}</b><br>" +
+            f"{hover_text}: %{{y:.1f}} {unite}<br>" +
+            "Population: %{x:,.0f} hab.<br>" +
+            f"Année: {trace.name.split(' - ')[1]}<extra></extra>"
+        )
+
+    # Créer les steps pour le slider
+    steps = []
+    for year in years:
+        step = dict(
+            method="update",
+            args=[{"visible": [False] * len(fig.data)}],
+            label=str(year)
+        )
+        step["args"][0]["visible"][years.index(year)] = True
+        steps.append(step)
+
     # Mise à jour du layout
     fig.update_layout(
         title=dict(
-            text=f'Concentration moyenne annuelle de {pollutant_type} par commune - {years[0]}',
-            font=dict(size=24)
+            text=titre_global,
+            font=dict(size=24),
+            y=0.95  # Position du titre principal en haut
         ),
+        margin=dict(t=150),  # Marge supérieure pour le titre et le slider
         xaxis=dict(
-            title='Population des communes',
-            tickangle=-45,
+            title='Population (habitants)',
+            type='log',  # Échelle logarithmique pour la population
             showgrid=True,
             gridwidth=1,
             gridcolor='LightGray'
         ),
         yaxis=dict(
-            title=f'Concentration de {pollutant_type} (µg/m³)',
+            title=f'Valeur ({unite})',
             showgrid=True,
             gridwidth=1,
             gridcolor='LightGray'
         ),
         showlegend=False,
-        sliders=sliders
+        sliders=[dict(
+            active=0,
+            currentvalue={"prefix": "Année: ", "xanchor": "right"},
+            pad={"t": 0, "b": 10},
+            yanchor="top",
+            y=0.85,  # Position du slider sous le titre principal
+            x=0.05,
+            len=0.9,  # Longueur du slider
+            steps=steps
+        )]
     )
+    
     
     return fig
 

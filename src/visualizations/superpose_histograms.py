@@ -1,138 +1,185 @@
 import plotly.graph_objects as go
-from plotly.subplots import make_subplots
-import pandas as pd
+import re
+import json
 import os
 
-def create_pollution_histogram_animation(data, pollutant_type):
+def get_data_from_html(file_path):
     """
-    Crée un histogramme animé pour visualiser la distribution d'un polluant de 2000 à 2015.
+    Extrait les données du fichier HTML.
     
     Args:
-        data (pd.DataFrame): Le DataFrame contenant les données de toutes les années
-        pollutant_type (str): Type de polluant
-    
+        file_path (str): Chemin vers le fichier HTML
+        
     Returns:
-        plotly.graph_objects.Figure: La figure créée avec animation
+        list: Liste des traces de données ou None en cas d'erreur
     """
-    # Filtrer les communes avec plus de 1500 habitants
-    data = data[data['Population'] > 1500]
+    try:
+        with open(file_path, 'r', encoding='utf-8') as f:
+            content = f.read()
+            # Rechercher les données avec une expression régulière
+            match = re.search(r'var data=(\[.*?\]);', content, re.DOTALL)
+            if not match:
+                match = re.search(r'data: (\[.*?\])};}', content, re.DOTALL)
+            if match:
+                data_str = match.group(1)
+                try:
+                    return json.loads(data_str)
+                except json.JSONDecodeError as e:
+                    print(f"  ! Impossible de décoder les données JSON de {file_path}: {str(e)}")
+                    print(f"  Data string: {data_str[:100]}...")  # Afficher le début des données pour debug
+                    return None
+    except Exception as e:
+        print(f"  ! Erreur lors de la lecture de {file_path}: {str(e)}")
+        return None
+    return None
+
+def superpose_histograms_for_pollutant(output_dir, pollutant_type):
+    """
+    Crée un histogramme superposé pour un polluant donné.
     
-    # Déterminer le nom de la colonne selon le type de polluant
-    if pollutant_type == 'Somo 35':
-        column_name = 'Moyenne annuelle de somo 35 (ug/m3.jour)'
-    elif pollutant_type == 'AOT 40':
-        column_name = "Moyenne annuelle d'AOT 40 (ug/m3.heure)"
-    else:
-        column_name = f'Moyenne annuelle de concentration de {pollutant_type} (ug/m3)'
-    
+    Args:
+        output_dir (str): Le dossier contenant les fichiers HTML
+        pollutant_type (str): Type de polluant
+    """
     # Créer la figure
     fig = go.Figure()
     
     # Liste des années disponibles (en excluant 2006)
-    years = sorted(list(set(data['Année'].unique()) - {2006}))
+    years = list(range(2000, 2016))
+    if 2006 in years:
+        years.remove(2006)
     
-    # Pour chaque année, ajouter une trace (initialement invisible)
-    for year in years:
-        year_data = data[data['Année'] == year]
-        values = year_data[column_name]
-        
-        fig.add_trace(
-            go.Histogram(
-                x=values,
-                name=f'Distribution {pollutant_type} - {year}',
-                nbinsx=30,
-                marker_color='rgb(70, 130, 180)',
-                hovertemplate="<b>Concentration</b>: %{x:.1f} µg/m³<br>" +
-                             "Nombre de communes: %{y}<br>" +
-                             f"Année: {year}<extra></extra>",
-                visible=False
-            )
-        )
+    # Couleurs pour chaque année
+    colors = ['rgb(31, 119, 180)', 'rgb(255, 127, 14)', 'rgb(44, 160, 44)',
+             'rgb(214, 39, 40)', 'rgb(148, 103, 189)', 'rgb(140, 86, 75)',
+             'rgb(227, 119, 194)', 'rgb(127, 127, 127)', 'rgb(188, 189, 34)',
+             'rgb(23, 190, 207)', 'rgb(174, 199, 232)', 'rgb(255, 187, 120)',
+             'rgb(152, 223, 138)', 'rgb(255, 152, 150)', 'rgb(197, 176, 213)']
     
-    # Rendre la première trace visible
-    fig.data[0].visible = True
+    # Pour chaque année, récupérer et ajouter les données
+    for i, year in enumerate(years):
+        file_path = os.path.join(output_dir, f'{pollutant_type}_histogram_{year}.html')
+        if os.path.exists(file_path):
+            traces = get_data_from_html(file_path)
+            if traces and len(traces) > 0:
+                for trace in traces:
+                    if isinstance(trace, dict) and 'x' in trace:
+                        # Convertir les valeurs en nombres si ce ne sont pas déjà des nombres
+                        x_values = []
+                        for x in trace['x']:
+                            try:
+                                x_values.append(float(x) if isinstance(x, str) else x)
+                            except (ValueError, TypeError):
+                                continue
+                        
+                        if x_values:  # Ne créer la trace que si nous avons des données valides
+                            new_trace = go.Histogram(
+                                x=x_values,
+                                nbinsx=30,
+                                name=str(year),
+                                marker_color=colors[i % len(colors)],
+                                opacity=0.6,
+                                hovertemplate="<b>Concentration</b>: %{x:.1f} µg/m³<br>" +
+                                            "Nombre de communes: %{y}<br>" +
+                                            f"Année: {year}<extra></extra>"
+                            )
+                            fig.add_trace(new_trace)
+                            print(f"    → {len(x_values)} valeurs ajoutées pour {year}")
+                        break  # Ne prendre que la première trace valide
+    
+    # Préparation du titre et des unités selon le type de polluant
+    if pollutant_type == 'somo 35':
+        titre_global = 'Superposition des distributions SOMO35 en France (2000-2015)'
+        unite = 'µg/m³·jour'
+    elif pollutant_type == 'AOT 40':
+        titre_global = 'Superposition des distributions AOT40 en France (2000-2015)'
+        unite = 'µg/m³·heure'
+    elif pollutant_type == 'PM25':
+        titre_global = 'Superposition des distributions PM2.5 en France (2000-2015)'
+        unite = 'µg/m³'
+    else:
+        titre_global = f'Superposition des distributions {pollutant_type} en France (2000-2015)'
+        unite = 'µg/m³'
     
     # Créer les steps pour le slider
-    steps = []
-    for i, year in enumerate(years):
-        step = dict(
-            method="update",
-            args=[{"visible": [False] * len(fig.data)},
-                  {"title": f"Distribution des concentrations de {pollutant_type} - {year}"}],
-            label=str(year)
-        )
-        step["args"][0]["visible"][i] = True
-        steps.append(step)
-    
-    # Créer le slider
-    sliders = [dict(
-        active=0,
-        currentvalue={"prefix": "Année: "},
-        pad={"t": 50},
-        steps=steps
+    # Step pour "Toutes les années"
+    steps = [dict(
+        method="update",
+        args=[{"visible": [True] * len(fig.data)}],
+        label="Toutes les années"
     )]
+    
+    # Steps pour chaque année individuelle
+    for year in years:
+        visible = [str(year) == trace.name for trace in fig.data]
+        if any(visible):  # Ne créer le step que si l'année existe dans les données
+            step = dict(
+                method="update",
+                args=[{"visible": visible}],
+                label=str(year)
+            )
+            steps.append(step)
     
     # Mise à jour du layout
     fig.update_layout(
         title=dict(
-            text=f'Distribution des concentrations de {pollutant_type} - {years[0]}',
-            font=dict(size=24)
+            text=titre_global,
+            font=dict(size=24),
+            y=0.95
         ),
+        margin=dict(t=150),
         xaxis=dict(
-            title=f'Concentration de {pollutant_type} (µg/m³)',
-            showgrid=True,
-            gridwidth=1,
-            gridcolor='LightGray'
+            title=dict(
+                text=f'Valeur ({unite})',
+                font=dict(size=18)
+            )
         ),
         yaxis=dict(
-            title='Nombre de communes',
-            showgrid=True,
-            gridwidth=1,
-            gridcolor='LightGray'
+            title=dict(
+                text='Fréquence',
+                font=dict(size=18)
+            )
         ),
+        barmode='overlay',
+        bargap=0.1,
         showlegend=False,
-        sliders=sliders
+        sliders=[dict(
+            active=0,
+            currentvalue=dict(
+                prefix="Année: ",
+                xanchor="center",
+                font=dict(size=16)
+            ),
+            pad=dict(t=50, b=10),
+            yanchor="top",
+            y=1.1,
+            x=0.05,
+            len=0.9,
+            steps=steps
+        )]
     )
     
-    # Ajouter une ligne verticale pour la moyenne (qui se déplacera avec l'animation)
-    for year in years:
-        year_data = data[data['Année'] == year]
-        mean_value = year_data[column_name].mean()
-        
-        fig.add_vline(
-            x=mean_value,
-            line_dash="dash",
-            line_color="red",
-            annotation_text=f"Moyenne: {mean_value:.1f}",
-            annotation_position="top right",
-            visible=False
-        )
+    # Sauvegarder la figure
+    output_file = os.path.join(output_dir, f'{pollutant_type}_histogrammes_superposes.html')
+    fig.write_html(output_file)
+    print(f"✓ Histogramme superposé créé pour {pollutant_type}")
+
+def main():
+    # Chemin vers le répertoire de sortie
+    script_dir = os.path.dirname(os.path.abspath(__file__))
+    project_root = os.path.dirname(os.path.dirname(script_dir))
+    output_dir = os.path.join(project_root, 'output')
     
-    # Rendre visible la ligne de la première année
-    fig.data[len(years)].visible = True
+    # Liste des polluants
+    polluants = ['NO2', 'O3', 'PM10', 'PM25', 'AOT 40', 'somo 35']
     
-    return fig
+    print("Création des histogrammes superposés...")
+    # Créer les histogrammes superposés pour chaque polluant
+    for polluant in polluants:
+        print(f"\nTraitement de {polluant}...")
+        superpose_histograms_for_pollutant(output_dir, polluant)
+    
+    print("\nTerminé ! Les fichiers ont été créés dans le dossier 'output'.")
 
 if __name__ == "__main__":
-    # Liste des polluants à traiter
-    polluants = ['NO2', 'PM10', 'O3',]
-    
-    # Dossier de sortie des graphiques
-    output_dir = '../output'
-    os.makedirs(output_dir, exist_ok=True)
-    
-    # Charger les données
-    data_file = '../data/processed/pollution_data_all_years.csv'
-    data = pd.read_csv(data_file)
-    
-    # Générer les histogrammes superposés pour chaque polluant
-    for polluant in polluants:
-        print(f"Génération de l'histogramme superposé pour {polluant}...")
-        try:
-            fig = create_pollution_histogram_animation(data, polluant)
-            fig.write_html(os.path.join(output_dir, f'{polluant}_histogrammes_superposes.html'))
-            print(f"  ✓ Histogramme superposé généré pour {polluant}")
-        except Exception as e:
-            print(f"  ✗ Erreur lors de la génération de l'histogramme superposé pour {polluant}: {str(e)}")
-    
-    print("\nTerminé ! Les histogrammes superposés ont été générés dans le dossier 'output'.")
+    main()

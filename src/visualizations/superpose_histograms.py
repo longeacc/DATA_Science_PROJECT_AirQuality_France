@@ -2,7 +2,7 @@ import os
 import webbrowser
 
 def create_histograms_viewer():
-    output_dir = "output"
+    output_dir = "output/FINAL_superposed_graphs_map"
     pollutants = ["NO2", "PM10", "O3", "somo 35", "PM25", "AOT 40"]
     years = list(range(2000, 2016))
     years.remove(2006)
@@ -256,18 +256,18 @@ def create_histograms_viewer():
                 yearDisplay.textContent = year;
                 
                 const filename = `${pollutant}_histogram_${year}.html`;
-                graphFrame.src = `output/${filename}`;
+                graphFrame.src = `../${filename}`;
                 
             } else if (currentView === 'comparison') {
                 const year1 = year1Select.value;
                 const year2 = year2Select.value;
                 
                 const filename = `${pollutant}_histogram_comparison_${year1}_${year2}.html`;
-                graphFrame.src = `output/${filename}`;
+                graphFrame.src = `../${filename}`;
                 
             } else if (currentView === 'evolution') {
                 const filename = `${pollutant}_histogram_evolution.html`;
-                graphFrame.src = `output/${filename}`;
+                graphFrame.src = `../${filename}`;
             }
         }
         
@@ -328,71 +328,12 @@ def create_histograms_viewer():
 </html>
 """
     
-    output_path = "histogrammes_viewer.html"
+    os.makedirs(output_dir, exist_ok=True)
+    output_path = os.path.join(output_dir, "FINAL_histogrammes_viewer.html")
     with open(output_path, "w", encoding="utf-8") as f:
         f.write(html_content)
     
     print(f"✅ Fichier {output_path} créé avec succès")
-    
-    # Créer aussi les fichiers histogrammes de base
-    create_basic_histograms()
-    
-    # Ouvrir automatiquement dans le navigateur
-    abs_path = os.path.abspath(output_path)
-    webbrowser.open('file://' + abs_path)
-
-def create_basic_histograms():
-    """
-    Crée quelques histogrammes de base pour tester l'interface
-    """
-    print("🔄 Création des histogrammes de base...")
-    
-    # Cette fonction créerait les fichiers HTML d'histogrammes
-    # Pour l'instant, on va créer des fichiers de démonstration
-    import plotly.graph_objects as go
-    import numpy as np
-    
-    pollutants = ["NO2", "PM10", "O3"]
-    years = [2000, 2010, 2015]
-    
-    for pollutant in pollutants:
-        for year in years:
-            # Données factices réalistes
-            if pollutant == "NO2":
-                data = np.random.normal(25 - (year-2000)*0.5, 8, 1000)
-            elif pollutant == "PM10":
-                data = np.random.normal(18 - (year-2000)*0.3, 5, 1000)
-            elif pollutant == "O3":
-                data = np.random.normal(35 + (year-2000)*0.2, 10, 1000)
-            else:
-                data = np.random.normal(20, 6, 1000)
-            
-            fig = go.Figure()
-            fig.add_trace(go.Histogram(
-                x=data,
-                nbinsx=20,
-                name=f'{pollutant} {year}',
-                marker_color='#1f77b4',
-                opacity=0.7
-            ))
-            
-            # Ajouter la moyenne
-            mean_val = np.mean(data)
-            fig.add_vline(x=mean_val, line_dash="dash", line_color="red", 
-                         annotation_text=f"Moyenne: {mean_val:.2f}")
-            
-            fig.update_layout(
-                title=f"Distribution {pollutant} - {year}",
-                xaxis_title=f"Concentration {pollutant}",
-                yaxis_title="Nombre de communes",
-                template="plotly_white",
-                height=500
-            )
-            
-            # Sauvegarder
-            filename = f"output/{pollutant}_histogram_{year}.html"
-            fig.write_html(filename)
-            print(f"  ✅ {filename} créé")
 
 if __name__ == "__main__":
     create_histograms_viewer()

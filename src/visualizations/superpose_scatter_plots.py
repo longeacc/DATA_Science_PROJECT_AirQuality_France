@@ -1,8 +1,8 @@
 import os
 import webbrowser
 
-def create_histograms_viewer():
-    output_dir = "output"
+def create_scatter_plots_viewer():
+    output_dir = "output/FINAL_superposed_graphs_map"
     pollutants = ["NO2", "PM10", "O3", "somo 35", "PM25", "AOT 40"]
     years = list(range(2000, 2016))
     years.remove(2006)
@@ -159,12 +159,11 @@ def create_histograms_viewer():
 </head>
 <body>
     <div class="header">
-        <h1>📊 Histogrammes des Polluants Atmosphériques</h1>
-        <p>Distribution des concentrations par commune</p>
+        <h1>📊 Évolution des Polluants Atmosphériques - Scatter Plots</h1>
     </div>
     
     <div class="info">
-        <strong>ℹ️ Information :</strong> Visualisez la distribution des concentrations de polluants à travers les communes françaises. Les histogrammes montrent la fréquence des différentes concentrations.
+        <strong>ℹ️ Information :</strong> Utilisez les contrôles ci-dessous pour naviguer entre les différents polluants et années.
     </div>
     
     <div class="controls">
@@ -178,46 +177,12 @@ def create_histograms_viewer():
     
     html_content += """            </select>
         </div>
-        
-        <div class="view-type">
-            <button class="view-btn active" id="btn-single">Année unique</button>
-            <button class="view-btn" id="btn-comparison">Comparaison</button>
-            <button class="view-btn" id="btn-evolution">Évolution</button>
-        </div>
     </div>
     
-    <div class="slider-container" id="single-year-container">
+    <div class="slider-container">
         <label>📅 Année:</label>
         <input type="range" id="year-slider" min="0" max="14" value="0" step="1">
         <div class="year-display" id="year-display">2000</div>
-    </div>
-    
-    <div class="comparison-controls" id="comparison-container">
-        <div class="comparison-group">
-            <div class="control-group">
-                <label>📅 Année 1:</label>
-                <select id="year1-select">
-"""
-    
-    for year in years:
-        html_content += f'                    <option value="{year}">{year}</option>\n'
-    
-    html_content += """                </select>
-            </div>
-            <div class="control-group">
-                <label>📅 Année 2:</label>
-                <select id="year2-select">
-"""
-    
-    for year in years:
-        if year != 2000:  # Éviter la même année par défaut
-            html_content += f'                    <option value="{year}">{year}</option>\n'
-        else:
-            html_content += f'                    <option value="{year}" selected>{year}</option>\n'
-    
-    html_content += """                </select>
-            </div>
-        </div>
     </div>
     
     <div class="graph-container">
@@ -225,18 +190,10 @@ def create_histograms_viewer():
     </div>
     
     <script>
-        // Éléments DOM
         const pollutantSelect = document.getElementById('pollutant-select');
         const yearSlider = document.getElementById('year-slider');
         const yearDisplay = document.getElementById('year-display');
         const graphFrame = document.getElementById('graph-frame');
-        const btnSingle = document.getElementById('btn-single');
-        const btnComparison = document.getElementById('btn-comparison');
-        const btnEvolution = document.getElementById('btn-evolution');
-        const singleYearContainer = document.getElementById('single-year-container');
-        const comparisonContainer = document.getElementById('comparison-container');
-        const year1Select = document.getElementById('year1-select');
-        const year2Select = document.getElementById('year2-select');
         
         const years = ["""
     
@@ -244,31 +201,15 @@ def create_histograms_viewer():
     
     html_content += """];
         
-        let currentView = 'single';
-        
         // Fonction pour mettre à jour le graphique
         function updateGraph() {
             const pollutant = pollutantSelect.value;
+            const yearIndex = parseInt(yearSlider.value);
+            const year = years[yearIndex];
+            yearDisplay.textContent = year;
             
-            if (currentView === 'single') {
-                const yearIndex = parseInt(yearSlider.value);
-                const year = years[yearIndex];
-                yearDisplay.textContent = year;
-                
-                const filename = `${pollutant}_histogram_${year}.html`;
-                graphFrame.src = `output/${filename}`;
-                
-            } else if (currentView === 'comparison') {
-                const year1 = year1Select.value;
-                const year2 = year2Select.value;
-                
-                const filename = `${pollutant}_histogram_comparison_${year1}_${year2}.html`;
-                graphFrame.src = `output/${filename}`;
-                
-            } else if (currentView === 'evolution') {
-                const filename = `${pollutant}_histogram_evolution.html`;
-                graphFrame.src = `output/${filename}`;
-            }
+            const filename = `${pollutant}_moyenne_annuelle_${year}.html`;
+            graphFrame.src = `../${filename}`;
         }
         
         // Fonction pour changer la vue
@@ -297,102 +238,22 @@ def create_histograms_viewer():
             updateGraph();
         }
         
-        // Événements
         pollutantSelect.addEventListener('change', updateGraph);
         yearSlider.addEventListener('input', updateGraph);
-        year1Select.addEventListener('change', updateGraph);
-        year2Select.addEventListener('change', updateGraph);
-        
-        btnSingle.addEventListener('click', () => setView('single'));
-        btnComparison.addEventListener('click', () => setView('comparison'));
-        btnEvolution.addEventListener('click', () => setView('evolution'));
         
         // Charger le premier graphique
-        setView('single');
-        
-        // Gestion des erreurs de charnement
-        graphFrame.addEventListener('load', function() {
-            if (graphFrame.contentDocument.body.innerHTML.includes('404') || 
-                graphFrame.contentDocument.body.innerHTML.includes('Not Found')) {
-                graphFrame.contentDocument.body.innerHTML = `
-                    <div style="display: flex; justify-content: center; align-items: center; height: 100%; flex-direction: column; color: #666;">
-                        <h2>📊 Histogramme non disponible</h2>
-                        <p>Le fichier histogramme pour cette sélection n'a pas encore été généré.</p>
-                        <p>Utilisez le script Python pour créer les histogrammes d'abord.</p>
-                    </div>
-                `;
-            }
-        });
+        updateGraph();
     </script>
 </body>
 </html>
 """
     
-    output_path = "histogrammes_viewer.html"
+    os.makedirs(output_dir, exist_ok=True)
+    output_path = os.path.join(output_dir, "FINAL_superposed_scatter_plots.html")
     with open(output_path, "w", encoding="utf-8") as f:
         f.write(html_content)
     
     print(f"✅ Fichier {output_path} créé avec succès")
-    
-    # Créer aussi les fichiers histogrammes de base
-    create_basic_histograms()
-    
-    # Ouvrir automatiquement dans le navigateur
-    abs_path = os.path.abspath(output_path)
-    webbrowser.open('file://' + abs_path)
-
-def create_basic_histograms():
-    """
-    Crée quelques histogrammes de base pour tester l'interface
-    """
-    print("🔄 Création des histogrammes de base...")
-    
-    # Cette fonction créerait les fichiers HTML d'histogrammes
-    # Pour l'instant, on va créer des fichiers de démonstration
-    import plotly.graph_objects as go
-    import numpy as np
-    
-    pollutants = ["NO2", "PM10", "O3"]
-    years = [2000, 2010, 2015]
-    
-    for pollutant in pollutants:
-        for year in years:
-            # Données factices réalistes
-            if pollutant == "NO2":
-                data = np.random.normal(25 - (year-2000)*0.5, 8, 1000)
-            elif pollutant == "PM10":
-                data = np.random.normal(18 - (year-2000)*0.3, 5, 1000)
-            elif pollutant == "O3":
-                data = np.random.normal(35 + (year-2000)*0.2, 10, 1000)
-            else:
-                data = np.random.normal(20, 6, 1000)
-            
-            fig = go.Figure()
-            fig.add_trace(go.Histogram(
-                x=data,
-                nbinsx=20,
-                name=f'{pollutant} {year}',
-                marker_color='#1f77b4',
-                opacity=0.7
-            ))
-            
-            # Ajouter la moyenne
-            mean_val = np.mean(data)
-            fig.add_vline(x=mean_val, line_dash="dash", line_color="red", 
-                         annotation_text=f"Moyenne: {mean_val:.2f}")
-            
-            fig.update_layout(
-                title=f"Distribution {pollutant} - {year}",
-                xaxis_title=f"Concentration {pollutant}",
-                yaxis_title="Nombre de communes",
-                template="plotly_white",
-                height=500
-            )
-            
-            # Sauvegarder
-            filename = f"output/{pollutant}_histogram_{year}.html"
-            fig.write_html(filename)
-            print(f"  ✅ {filename} créé")
 
 if __name__ == "__main__":
-    create_histograms_viewer()
+    create_scatter_plots_viewer()

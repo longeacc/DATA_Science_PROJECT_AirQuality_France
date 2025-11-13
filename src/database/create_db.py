@@ -55,7 +55,7 @@ mapping = {
     'Moyenne annuelle de concentration de O3 ponderee par la population (ug/m3)': 'o3_pop',
     "Moyenne annuelle d'AOT 40 (ug/m3.heure)": 'aot40',
     'Moyenne annuelle de somo 35 (ug/m3.jour)': 'somo35',
-    'Moyenne annuelle de somo 35 pondere par la population (ug/m3.jour)': 'somo35_pop'
+    'Moyenne annuelle de somo 35 pondere par la population (ug/m3.jour)': 'somo35_pop',
 }
 
 df = df.rename(columns=mapping)
@@ -84,3 +84,26 @@ df = pd.read_sql_query(query, conn)
 print(df)
 
 conn.close()
+import pandas as pd
+
+# Afficher toutes les colonnes
+pd.set_option('display.max_columns', None)
+
+# Afficher toutes les lignes (optionnel si tu veux vraiment tout)
+pd.set_option('display.max_rows', None)
+
+# Ton code de requête reste le même
+import sqlite3
+import os
+
+base_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
+db_path = os.path.join(base_dir, "data", "air_quality.db")
+
+conn = sqlite3.connect(db_path)
+
+query = "SELECT * FROM air_quality LIMIT 10;"  # Exemple pour tester les colonnes
+df = pd.read_sql_query(query, conn)
+print(df)
+
+conn.close()
+

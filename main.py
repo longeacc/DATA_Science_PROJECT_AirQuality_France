@@ -144,78 +144,73 @@
 #     main() 
 # --- À AJOUTER À LA FIN DE TON main.py EXISTANT ---
 import os
-import shutil
-import webbrowser
 
-print("🎯 Création du dashboard final...")
-
-# Chemin du script
-base_dir = os.path.dirname(os.path.abspath(__file__))
-
-# Créer dossier final du dashboard
-dashboard_dir = os.path.join(base_dir, "output/FINAL_dashboard")
-os.makedirs(dashboard_dir, exist_ok=True)
-
-# Liste des fichiers à copier
-files_to_copy = [
-    ("output/FINAL_superposed_graphs_map/interactive_pollution_map.html", "interactive_pollution_map.html"),
-    ("output/FINAL_superposed_graphs_map/FINAL_histogrammes_viewer.html", "FINAL_histogrammes_viewer.html"),
-    ("src/database/output/superposed_scatter_plots.html", "superposed_scatter_plots.html")
-]
-
-# Copier les fichiers
-for src_rel, dest_name in files_to_copy:
-    src = os.path.join(base_dir, src_rel)
-    dest = os.path.join(dashboard_dir, dest_name)
-    if os.path.exists(src):
-        shutil.copy(src, dest)
-        print(f"✅ Copié : {dest_name}")
-    else:
-        print(f"⚠️ Fichier manquant : {src_rel}")
-
-# Créer le dashboard
-dashboard_html = """
+def create_map_histogram_dashboard():
+    output_dir = "output/FINAL_superposed_graphs_map"
+    os.makedirs(output_dir, exist_ok=True)
+    
+    html_path = os.path.join(output_dir, "FINAL_dashboard_map_histograms.html")
+    
+    html_content = """
 <!DOCTYPE html>
-<html>
+<html lang="fr">
 <head>
-    <meta charset="UTF-8">
-    <title>Dashboard Pollution - France</title>
-    <style>
-        body { margin:0; padding:20px; font-family:Arial; background:#f0f2f5; }
-        h1 { text-align:center; color:#2c3e50; }
-        .iframe-section { margin:30px 0; }
-        .section-title { background:#34495e; color:white; padding:15px; border-radius:5px 5px 0 0; font-size:18px; }
-        iframe { width:100%; height:700px; border:none; background:white; box-shadow:0 2px 10px rgba(0,0,0,0.1); }
-    </style>
+<meta charset="UTF-8">
+<title>Dashboard Map & Histogrammes</title>
+<style>
+    body { font-family: Arial, sans-serif; margin: 0; background: #f5f5f5; }
+    .header { background: #2c3e50; color: white; padding: 20px; text-align: center; }
+    .container { display: flex; height: calc(100vh - 80px); }
+    .map-container { flex: 1; padding: 10px; }
+    .map-container iframe { width: 100%; height: 100%; border: none; border-radius: 8px; }
+    .histogram-container { flex: 1; display: flex; flex-direction: column; padding: 10px; }
+    .tabs { display: flex; margin-bottom: 10px; }
+    .tab { padding: 10px 15px; cursor: pointer; background: #34495e; color: white; margin-right: 5px; border-radius: 5px; transition: background 0.3s; }
+    .tab.active { background: #3498db; font-weight: bold; }
+    .tab:hover { background: #2980b9; }
+    iframe.histogram-frame { flex: 1; width: 100%; border: none; border-radius: 8px; box-shadow: 0 2px 6px rgba(0,0,0,0.1); }
+</style>
 </head>
 <body>
-    <h1>🌍 Dashboard Pollution Atmosphérique - France</h1>
 
-    <div class="iframe-section">
-        <div class="section-title">🗺️ Carte Interactive</div>
-        <iframe src="interactive_pollution_map.html"></iframe>
-    </div>
+<div class="header">
+    <h1>📊 Dashboard Polluants Atmosphériques & Carte</h1>
+</div>
 
-    <div class="iframe-section">
-        <div class="section-title">📊 Histogrammes</div>
-        <iframe src="FINAL_histogrammes_viewer.html"></iframe>
+<div class="container">
+    <div class="map-container">
+        <iframe src="interactive_pollution_map.html" id="map-frame"></iframe>
     </div>
+    
+    <div class="histogram-container">
+        <div class="tabs">
+            <div class="tab active" data-src="FINAL_histogrammes_viewer.html">Histogrammes</div>
+            <div class="tab" data-src="AUTRE_FICHIER.html">Autre Visualisation</div>
+        </div>
+        <iframe src="FINAL_histogrammes_viewer.html" class="histogram-frame" id="histogram-frame"></iframe>
+    </div>
+</div>
 
-    <div class="iframe-section">
-        <div class="section-title">📈 Évolution Temporelle</div>
-        <iframe src="superposed_scatter_plots.html"></iframe>
-    </div>
+<script>
+    const tabs = document.querySelectorAll('.tab');
+    const histFrame = document.getElementById('histogram-frame');
+
+    tabs.forEach(tab => {
+        tab.addEventListener('click', () => {
+            tabs.forEach(t => t.classList.remove('active'));
+            tab.classList.add('active');
+            histFrame.src = tab.getAttribute('data-src');
+        });
+    });
+</script>
+
 </body>
 </html>
 """
+    with open(html_path, "w", encoding="utf-8") as f:
+        f.write(html_content)
+    
+    print(f"✅ Dashboard Map & Histogrammes créé : {html_path}")
 
-# Sauvegarder le dashboard
-dashboard_path = os.path.join(dashboard_dir, "FINAL_dashboard_pollution.html")
-with open(dashboard_path, "w", encoding="utf-8") as f:
-    f.write(dashboard_html)
-
-print(f"✅ Dashboard créé : {dashboard_path}")
-
-# Ouvrir le dashboard
-webbrowser.open('file://' + os.path.abspath(dashboard_path))
-print("🌐 Ouverture du dashboard dans le navigateur...")
+if __name__ == "__main__":
+    create_map_histogram_dashboard()

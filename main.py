@@ -292,4 +292,4 @@ if __name__ == '__main__':
     webbrowser.open(url)
     
     # Lancer le serveur Dash
-    app.run(debug=True, host='127.0.0.1', port=8050, use_reloader=False) le code marche tres bien je veux mtn qqch d'esthétique sur mon dashboard 
+    app.run(debug=True, host='127.0.0.1', port=8050, use_reloader=False) 

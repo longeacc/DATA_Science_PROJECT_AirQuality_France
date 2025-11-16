@@ -1,22 +1,119 @@
+"""
+Script pour générer des graphiques de pollution en France.
+Crée des histogrammes et des scatter plots pour chaque polluant et année.
+"""
+
 import os
 import html
-import dash
+import webbrowser
+import pandas as pd
+from plotly.io import write_html
+from src.utils.common_functions import load_commune_mappings, load_data_for_year
+from src.visualizations.scatter_plots import create_pollution_scatter
+from src.visualizations.histograms import create_pollution_histogram
+
+
+def generate_graphs():
+    """
+    Fonction pour générer tous les graphiques (histogrammes et scatter plots).
+    """
+    try:
+        print("\nChargement des données pour toutes les années...")
+        data = pd.DataFrame()
+        
+        commune_to_insee, insee_to_commune = load_commune_mappings()
+        if commune_to_insee is None or insee_to_commune is None:
+            print("Erreur : Impossible de charger les correspondances des communes.")
+            return
+        
+        print(f"Correspondances des communes chargées : {len(commune_to_insee)} communes")
+        
+        for year in range(2000, 2016):
+            if year == 2006:
+                continue
+            print(f"\nChargement des données pour l'année {year}...")
+            year_data = load_data_for_year(year)
+            if year_data is not None:
+                communes_manquantes = [c for c in year_data['Commune'] if c not in commune_to_insee]
+                if communes_manquantes:
+                    print(f"Attention : {len(communes_manquantes)} communes non trouvées en {year}")
+                data = pd.concat([data, year_data], ignore_index=True)
+        
+        if data.empty:
+            print("Erreur : aucune donnée chargée.")
+            return
+
+        # Créer les dossiers de sortie
+        script_dir = os.path.dirname(os.path.abspath(__file__))
+        output_hist_dir = os.path.join(script_dir, 'assets', 'html_histograms')
+        output_scatter_dir = os.path.join(script_dir, 'assets', 'scatter')
+        os.makedirs(output_hist_dir, exist_ok=True)
+        os.makedirs(output_scatter_dir, exist_ok=True)
+        print(f"Dossiers créés :\n- Histogrammes : {output_hist_dir}\n- Scatter : {output_scatter_dir}")
+
+        # Polluants et colonnes
+        polluants_tous = ['NO2', 'PM10', 'O3', 'Somo 35', 'AOT 40']
+        polluant_2009 = 'PM25'
+        noms_colonnes = {
+            'NO2': 'Moyenne annuelle de concentration de NO2 (ug/m3)',
+            'PM10': 'Moyenne annuelle de concentration de PM10 (ug/m3)',
+            'O3': 'Moyenne annuelle de concentration de O3 (ug/m3)',
+            'Somo 35': 'Moyenne annuelle de somo 35 (ug/m3.jour)',
+            'AOT 40': "Moyenne annuelle d'AOT 40 (ug/m3.heure)",
+            'PM25': 'Moyenne annuelle de concentration de PM25 (ug/m3)'
+        }
+
+        années = sorted(data['Année'].unique())
+        for année in années:
+            print(f"\nTraitement de l'année {année}...")
+            données_année = data[data['Année'] == année]
+            
+            polluants_à_traiter = polluants_tous.copy()
+            if année >= 2009:
+                polluants_à_traiter.append(polluant_2009)
+            
+            for polluant in polluants_à_traiter:
+                colonne = noms_colonnes[polluant]
+                if colonne not in données_année.columns:
+                    print(f"  Données non disponibles pour {polluant} en {année}")
+                    continue
+                
+                try:
+                    # Scatter plot
+                    fig_scatter = create_pollution_scatter(données_année, insee_to_commune, polluant)
+                    scatter_file = os.path.join(output_scatter_dir, f'{polluant}_scatter_{année}.html')
+                    write_html(fig_scatter, scatter_file, auto_open=False, include_plotlyjs='cdn')
+                    
+                    # Histogramme
+                    fig_hist = create_pollution_histogram(données_année, polluant)
+                    hist_file = os.path.join(output_hist_dir, f'{polluant}_histogram_{année}.html')
+                    write_html(fig_hist, hist_file, auto_open=False, include_plotlyjs='cdn')
+                    
+                    print(f"  ✓ Graphiques générés pour {polluant}")
+                except Exception as e:
+                    print(f"  ✗ Erreur lors de la génération des graphiques pour {polluant} : {e}")
+
+        print("\nToutes les visualisations ont été générées avec succès !")
+        
+    except Exception as e:
+        print(f"Une erreur s'est produite : {e}")
+
 
 def generate_dashboard():
     """
-    Génère un tableau de bord statique (3 onglets): README, Carte, Graphiques.
-    Écrit le fichier dans ../output_csv/superposed_graphs_map/FINAL_dashboard.html
-    et référence les fichiers HTML déjà générés sous ../output/FINAL_superposed_graphs_map/.
+    Generates a static dashboard (3 tabs): README, Map, Graphs.
+Writes the file to ../output_csv/superposed_graphs_map/FINAL_dashboard.html
+and references the HTML files already generated in ../output/FINAL_superposed_graphs_map/.
     """
     script_dir = os.path.dirname(os.path.abspath(__file__))
     workspace_root = os.path.abspath(os.path.join(script_dir, '..'))
 
-    # Emplacements de sortie et des fichiers existants
+    # Output locations and existing files
     output_dir = os.path.join(workspace_root, 'output_csv', 'superposed_graphs_map')
     os.makedirs(output_dir, exist_ok=True)
     dashboard_path = os.path.join(output_dir, 'FINAL_dashboard.html')
 
-    # Emplacements possibles des sorties existantes
+    # Possible locations of existing outputs
     candidates_base = [
       os.path.join(script_dir, 'assets', 'output_csv', 'FINAL_superposed_graphs_map'),
       os.path.join(script_dir, 'assets', 'maps'),
@@ -43,7 +140,7 @@ def generate_dashboard():
     hist_viewer = find_existing_file(candidates_base, 'FINAL_histogrammes_viewer.html')
     scatter_viewer = find_existing_file(candidates_base, 'FINAL_superposed_scatter_plots.html')
 
-    # Chemins relatifs depuis le tableau de bord vers les fichiers ciblés
+    # Relative paths from the dashboard to the targeted files
     def to_rel(src_abs):
       return os.path.relpath(os.path.dirname(src_abs), output_dir).replace('\\', '/') + '/' + os.path.basename(src_abs)
 
@@ -51,7 +148,7 @@ def generate_dashboard():
     hist_src = to_rel(hist_viewer) if hist_viewer else None
     scatter_src = to_rel(scatter_viewer) if scatter_viewer else None
 
-    # Contenu README
+    # README content
     readme_path = os.path.join(script_dir, 'README.md')
     readme_md = ''
     if os.path.exists(readme_path):
@@ -63,10 +160,8 @@ def generate_dashboard():
     else:
         readme_md = '# README\nAucun fichier README.md trouvé dans le projet.'
 
-    # Échapper pour JS string
     readme_js = readme_md.replace('\\', '\\\\').replace('\n', '\\n').replace('"', '\\"')
 
-    # Messages d'erreur intégrés
     def iframe_or_message(src, message):
         if src:
             return f'<iframe src="{src}" class="content-frame"></iframe>'
@@ -199,6 +294,12 @@ def generate_dashboard():
 
 
 if __name__ == '__main__':
-    import webbrowser
+    # Générer les graphiques (scatter plots et histogrammes)
+    print("=== Génération des graphiques ===")
+    generate_graphs()
+    
+    # Générer le dashboard
+    print("\n=== Génération du dashboard ===")
     dashboard_file = generate_dashboard()
     webbrowser.open(f'file:///{dashboard_file.replace(os.sep, "/")}') 
+    

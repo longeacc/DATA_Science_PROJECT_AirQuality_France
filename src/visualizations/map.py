@@ -6,8 +6,10 @@ import json
 import os
 
 # Créer le dossier de sortie s'il n'existe pas
-output_dir = "output/FINAL_superposed_graphs_map"
+# Créer le dossier assets s'il n'existe pas
+output_dir = "assets"
 os.makedirs(output_dir, exist_ok=True)
+
 
 print("🔄 Chargement des données depuis la base de données...")
 
@@ -519,6 +521,7 @@ html_content += """
 
 # --- Sauvegarder la carte ---
 output_path = os.path.join(output_dir, 'interactive_pollution_map.html')
+
 with open(output_path, 'w', encoding='utf-8') as f:
     f.write(html_content)
 

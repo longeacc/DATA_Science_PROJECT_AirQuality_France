@@ -75,7 +75,7 @@
             
 #             # Créer le dossier de sortie s'il n'existe pas
 #             script_dir = os.path.dirname(os.path.abspath(__file__))
-#             output_dir = os.path.join(script_dir, 'output')
+#             output_dir = os.path.join(script_dir, 'assets', 'html_histograms')
 #             os.makedirs(output_dir, exist_ok=True)
 #             print(f"\nDossier de sortie créé : {output_dir}")
             
@@ -143,74 +143,132 @@
 # if __name__ == "__main__":
 #     main() 
 # --- À AJOUTER À LA FIN DE TON main.py EXISTANT ---
+# create_sample_histograms.py
+import dash
+from dash import dcc, html, Input, Output
 import os
+import base64
 
-def create_map_histogram_dashboard():
-    output_dir = "output/FINAL_superposed_graphs_map"
-    os.makedirs(output_dir, exist_ok=True)
-    
-    html_path = os.path.join(output_dir, "FINAL_dashboard_map_histograms.html")
-    
-    html_content = """
-<!DOCTYPE html>
-<html lang="fr">
-<head>
-<meta charset="UTF-8">
-<title>Dashboard Map & Histogrammes</title>
-<style>
-    body { font-family: Arial, sans-serif; margin: 0; background: #f5f5f5; }
-    .header { background: #2c3e50; color: white; padding: 20px; text-align: center; }
-    .container { display: flex; height: calc(100vh - 80px); }
-    .map-container { flex: 1; padding: 10px; }
-    .map-container iframe { width: 100%; height: 100%; border: none; border-radius: 8px; }
-    .histogram-container { flex: 1; display: flex; flex-direction: column; padding: 10px; }
-    .tabs { display: flex; margin-bottom: 10px; }
-    .tab { padding: 10px 15px; cursor: pointer; background: #34495e; color: white; margin-right: 5px; border-radius: 5px; transition: background 0.3s; }
-    .tab.active { background: #3498db; font-weight: bold; }
-    .tab:hover { background: #2980b9; }
-    iframe.histogram-frame { flex: 1; width: 100%; border: none; border-radius: 8px; box-shadow: 0 2px 6px rgba(0,0,0,0.1); }
-</style>
-</head>
-<body>
+# Configuration des chemins
+output_dir = "output/FINAL_superposed_graphs_map"
+html_source_dir = "output_csv"
 
-<div class="header">
-    <h1>📊 Dashboard Polluants Atmosphériques & Carte</h1>
-</div>
+print("🚀 Initialisation du dashboard...")
 
-<div class="container">
-    <div class="map-container">
-        <iframe src="interactive_pollution_map.html" id="map-frame"></iframe>
-    </div>
+# Polluants disponibles
+pollutants = ["NO2", "PM10", "O3", "somo 35", "PM25", "AOT 40"]
+years = list(range(2000, 2016))
+if 2006 in years:
+    years.remove(2006)
+
+app = dash.Dash(__name__, title="Dashboard Pollution")
+
+# Layout SIMPLE avec carte intégrée
+app.layout = html.Div([
+    # En-tête
+    html.Div([
+        html.H1("📊 Dashboard Pollution Atmosphérique - France", 
+                style={'textAlign': 'center', 'color': 'white', 'marginBottom': '10px'}),
+        html.P("Visualisation interactive des données de qualité de l'air (2000-2015)",
+               style={'textAlign': 'center', 'color': 'white', 'fontSize': '16px'})
+    ], style={'backgroundColor': '#2c3e50', 'padding': '15px', 'borderRadius': '10px', 'marginBottom': '20px'}),
     
-    <div class="histogram-container">
-        <div class="tabs">
-            <div class="tab active" data-src="FINAL_histogrammes_viewer.html">Histogrammes</div>
-            <div class="tab" data-src="AUTRE_FICHIER.html">Autre Visualisation</div>
+    # Section Carte
+    html.Div([
+        html.H3("🗺️ Carte Interactive de la Pollution", style={'textAlign': 'center', 'color': '#2c3e50', 'marginBottom': '10px'}),
+        html.Iframe(
+            src="/assets/interactive_pollution_map.html",
+            style={'width': '100%', 'height': '700px', 'border': 'none', 'borderRadius': '8px'}
+        )
+    ], style={'backgroundColor': 'white', 'padding': '20px', 'borderRadius': '10px', 'marginBottom': '20px'}),
+    
+    # Section Histogrammes
+    html.Div([
+        html.H3("📊 Histogrammes des Polluants", style={'textAlign': 'center', 'color': '#2c3e50', 'marginBottom': '20px'}),
+        
+        # Contrôles
+        html.Div([
+            html.Div([
+                html.Label("🧪 Polluant:", style={'fontWeight': 'bold', 'marginBottom': '5px'}),
+                dcc.Dropdown(
+                    id='pollutant-select',
+                    options=[{'label': p, 'value': p} for p in pollutants],
+                    value='NO2',
+                    clearable=False,
+                    style={'width': '100%'}
+                )
+            ], style={'width': '48%', 'display': 'inline-block', 'padding': '10px'}),
+            
+            html.Div([
+                html.Label("📅 Année:", style={'fontWeight': 'bold', 'marginBottom': '5px'}),
+                dcc.Slider(
+                    id='year-slider',
+                    min=0,
+                    max=len(years)-1,
+                    value=0,
+                    marks={i: str(year) for i, year in enumerate(years)},
+                    step=1
+                ),
+                html.Div(id='year-display', style={'textAlign': 'center', 'fontSize': '16px', 'fontWeight': 'bold', 'marginTop': '10px'})
+            ], style={'width': '48%', 'display': 'inline-block', 'padding': '10px'}),
+        ]),
+        
+        # Histogramme
+        html.Iframe(
+            id='graph-frame',
+            style={'width': '100%', 'height': '600px', 'border': 'none', 'borderRadius': '8px', 'marginTop': '20px'}
+        )
+    ], style={'backgroundColor': 'white', 'padding': '20px', 'borderRadius': '10px'})
+])
+
+# Callback pour l'année
+@app.callback(
+    Output('year-display', 'children'),
+    [Input('year-slider', 'value')]
+)
+def update_year_display(year_index):
+    return f"Année: {years[year_index]}"
+
+# Callback pour l'histogramme
+@app.callback(
+    Output('graph-frame', 'src'),
+    [Input('pollutant-select', 'value'),
+     Input('year-slider', 'value')]
+)
+def update_graph(pollutant, year_index):
+    year = years[year_index]
+    pollutant_clean = pollutant.replace(' ', '_')
+    filename = f"{pollutant_clean}_histogram_{year}.html"
+    filepath = os.path.join("assets", "html_histograms", filename)
+    
+    if os.path.exists(filepath):
+        try:
+            with open(filepath, 'r', encoding='utf-8') as f:
+                html_content = f.read()
+            
+            html_encoded = base64.b64encode(html_content.encode()).decode()
+            return f"data:text/html;base64,{html_encoded}"
+            
+        except Exception as e:
+            return create_error_page(f"Erreur: {str(e)}")
+    else:
+        return create_error_page(f"Fichier non trouvé: {filename}")
+
+def create_error_page(message):
+    error_html = f"""
+    <html>
+    <body style="display: flex; justify-content: center; align-items: center; height: 100vh; flex-direction: column; font-family: Arial;">
+        <div style="text-align: center; padding: 40px;">
+            <h2 style="color: #e74c3c;">📊 Erreur</h2>
+            <p>{message}</p>
         </div>
-        <iframe src="FINAL_histogrammes_viewer.html" class="histogram-frame" id="histogram-frame"></iframe>
-    </div>
-</div>
+    </body>
+    </html>
+    """
+    error_encoded = base64.b64encode(error_html.encode()).decode()
+    return f"data:text/html;base64,{error_encoded}"
 
-<script>
-    const tabs = document.querySelectorAll('.tab');
-    const histFrame = document.getElementById('histogram-frame');
-
-    tabs.forEach(tab => {
-        tab.addEventListener('click', () => {
-            tabs.forEach(t => t.classList.remove('active'));
-            tab.classList.add('active');
-            histFrame.src = tab.getAttribute('data-src');
-        });
-    });
-</script>
-
-</body>
-</html>
-"""
-    with open(html_path, "w", encoding="utf-8") as f:
-        f.write(html_content)
-    
-    print(f"✅ Dashboard Map & Histogrammes créé : {html_path}")
-
-if __name__ == "__main__":
-    create_map_histogram_dashboard()
+if __name__ == '__main__':
+    print("🌐 Démarrage du serveur...")
+    print("📍 Accédez à: http://127.0.0.1:8050")
+    app.run(debug=True, host='127.0.0.1', port=8050)

@@ -101,6 +101,8 @@
 
 # --- À AJOUTER À LA FIN DE TON main.py EXISTANT ---
 # create_sample_histograms.py
+
+
 import dash
 from dash import dcc, html, Input, Output
 import os
@@ -108,209 +110,186 @@ import base64
 import webbrowser
 
 # ---------------------------
-# Chemins des fichiers
+# Configuration des chemins
 # ---------------------------
+output_dir = "output/FINAL_superposed_graphs_map"
+html_source_dir = "output_csv"
 histogram_dir = os.path.join("assets", "html_histograms")
 scatter_dir = os.path.join("assets", "scatter")
 
+# ---------------------------
 # Polluants et années
+# ---------------------------
 pollutants = ["NO2", "PM10", "O3", "somo 35", "PM25", "AOT 40"]
 years = list(range(2000, 2016))
 if 2006 in years:
     years.remove(2006)
 
-pollutant_file_map = {p: p if " " not in p else p.title() for p in pollutants}
+
+
 
 # ---------------------------
-# Dash
+# Polluants et années
+# ---------------------------
+pollutants = ["NO2", "PM10", "O3", "somo 35", "PM25", "AOT 40"]
+years = list(range(2000, 2016))
+if 2006 in years:
+    years.remove(2006)
+
+# ---------------------------
+# Mapping pour correspondre au nom exact du fichier
+# ---------------------------
+pollutant_file_map = {
+    "NO2": "NO2",
+    "PM10": "PM10",
+    "O3": "O3",
+    "somo 35": "Somo 35",
+    "PM25": "PM25",
+    "AOT 40": "AOT 40"
+}
+
+
+# ---------------------------
+# Initialisation Dash
 # ---------------------------
 app = dash.Dash(__name__, title="Dashboard Pollution")
 
+# ---------------------------
+# Fonction page d'erreur
+# ---------------------------
 def create_error_page(message):
-    html_content = f"""
-    <html><body style="display:flex;justify-content:center;align-items:center;height:100vh;">
-    <div style="text-align:center;">
-    <h2 style="color:red;">Erreur</h2>
-    <p>{message}</p>
-    </div></body></html>
+    error_html = f"""
+    <html>
+    <body style="display: flex; justify-content: center; align-items: center; height: 100vh; flex-direction: column; font-family: Arial;">
+        <div style="text-align: center; padding: 40px;">
+            <h2 style="color: #e74c3c;">📊 Erreur</h2>
+            <p>{message}</p>
+        </div>
+    </body>
+    </html>
     """
-    encoded = base64.b64encode(html_content.encode()).decode()
-    return f"data:text/html;base64,{encoded}"
+    error_encoded = base64.b64encode(error_html.encode()).decode()
+    return f"data:text/html;base64,{error_encoded}"
 
 # ---------------------------
-# Layout CORRIGÉ
+# Layout
 # ---------------------------
 app.layout = html.Div([
-    # Header général
+    # En-tête
     html.Div([
-        html.H1("📊 Dashboard Pollution Atmosphérique - France",
-                style={'textAlign': 'center', 'color': '#2c3e50', 'marginBottom': '5px'}),
+        html.H1("📊 Dashboard Pollution Atmosphérique - France", 
+                style={'textAlign': 'center', 'color': 'white', 'marginBottom': '10px'}),
         html.P("Visualisation interactive des données de qualité de l'air (2000-2015)",
-               style={'textAlign': 'center', 'color': '#34495e', 'fontSize': '14px'})
-    ], style={'padding': '20px', 'backgroundColor': '#ecf0f1', 'borderRadius': '15px', 'marginBottom': '30px'}),
-
-    # Conteneur principal avec espacement FORCÉ
+               style={'textAlign': 'center', 'color': 'white', 'fontSize': '16px'})
+    ], style={'backgroundColor': '#2c3e50', 'padding': '15px', 'borderRadius': '10px', 'marginBottom': '20px'}),
+    
+    # Section Carte
     html.Div([
-        # Section Carte (gauche)
+        html.H3("🗺️ Carte Interactive de la Pollution", style={'textAlign': 'center', 'color': '#2c3e50', 'marginBottom': '10px'}),
+        html.Iframe(
+            src="/assets/interactive_pollution_map.html",
+            style={'width': '100%', 'height': '700px', 'border': 'none', 'borderRadius': '8px'}
+        )
+    ], style={'backgroundColor': 'white', 'padding': '20px', 'borderRadius': '10px', 'marginBottom': '20px'}),
+    
+    # Section Graphiques (Histogrammes et Scatter)
+    html.Div([
+        html.H3("📊 Graphiques des Polluants", style={'textAlign': 'center', 'color': '#2c3e50', 'marginBottom': '20px'}),
+        
+        # Contrôles
         html.Div([
-            html.H3("🗺️ Carte Interactive de la Pollution Atmosphérique en France",
-                    style={'marginBottom': '20px', 'color': '#2c3e50', 'textAlign': 'left'}),
-            html.Iframe(
-                src="/assets/interactive_pollution_map.html",
-                style={
-                    'width': '95%', 
-                    'height': '600px', 
-                    'border': 'none', 
-                    'borderRadius': '12px',
-                    'marginLeft': '20px'  # Espacement à gauche
-                }
-            )
-        ], style={
-            'width': '55%', 
-            'display': 'inline-block', 
-            'verticalAlign': 'top',
-            'marginRight': '50px',  # ESPACEMENT IMPORTANT ICI
-            'padding': '15px',
-            'backgroundColor': 'white',
-            'borderRadius': '12px',
-            'boxShadow': '0 4px 8px rgba(0,0,0,0.1)'
-        }),
-
-        # Section Graphiques et Contrôles (droite)
-        html.Div([
-            html.H3("📊 Graphiques des Polluants",
-                    style={'marginBottom': '25px', 'color': '#2c3e50', 'textAlign': 'left'}),
-            
-            # Contrôle Polluant avec ESPACEMENT
             html.Div([
-                html.Label("🧪 Polluant:", style={
-                    'fontWeight': 'bold', 
-                    'marginBottom': '10px', 
-                    'display': 'block',
-                    'fontSize': '16px'
-                }),
+                html.Label("🧪 Polluant:", style={'fontWeight': 'bold', 'marginBottom': '5px'}),
                 dcc.Dropdown(
                     id='pollutant-select',
                     options=[{'label': p, 'value': p} for p in pollutants],
                     value='NO2',
                     clearable=False,
-                    style={'width': '100%', 'marginBottom': '30px'}
-                ),
-            ], style={'marginBottom': '25px'}),
+                    style={'width': '100%'}
+                )
+            ], style={'width': '32%', 'display': 'inline-block', 'padding': '10px'}),
             
-            # Contrôle Année avec ESPACEMENT
             html.Div([
-                html.Label("📅 Année", style={
-                    'fontWeight': 'bold', 
-                    'marginBottom': '12px', 
-                    'display': 'block',
-                    'fontSize': '16px'
-                }),
+                html.Label("📅 Année:", style={'fontWeight': 'bold', 'marginBottom': '5px'}),
                 dcc.Slider(
                     id='year-slider',
                     min=0,
                     max=len(years)-1,
                     value=0,
                     marks={i: str(year) for i, year in enumerate(years)},
-                    step=1,
-                    tooltip={"placement": "bottom", "always_visible": True},
-                    updatemode='drag'
+                    step=1
                 ),
-                html.Div(id='year-display',
-                         style={
-                             'textAlign': 'center', 
-                             'fontSize': '16px', 
-                             'fontWeight': 'bold', 
-                             'marginTop': '15px', 
-                             'marginBottom': '30px',
-                             'color': '#2c3e50'
-                         }),
-            ], style={'marginBottom': '25px'}),
+                html.Div(id='year-display', style={'textAlign': 'center', 'fontSize': '16px', 'fontWeight': 'bold', 'marginTop': '10px'})
+            ], style={'width': '32%', 'display': 'inline-block', 'padding': '10px'}),
             
-            # Contrôle Type de graphique avec ESPACEMENT
             html.Div([
-                html.Label("📊 Type de graphique", style={
-                    'fontWeight': 'bold', 
-                    'marginBottom': '12px', 
-                    'display': 'block',
-                    'fontSize': '16px'
-                }),
+                html.Label("📊 Type de graphique:", style={'fontWeight': 'bold', 'marginBottom': '5px'}),
                 dcc.RadioItems(
                     id='graph-type',
                     options=[{'label': 'Histogramme', 'value': 'histogram'},
                              {'label': 'Scatter Plot', 'value': 'scatter'}],
                     value='histogram',
-                    labelStyle={
-                        'display': 'inline-block', 
-                        'marginRight': '20px',
-                        'fontSize': '14px'
-                    },
-                    style={'marginBottom': '25px'}
-                ),
-            ], style={'marginBottom': '25px'}),
-            
-            # Graphique
-            html.Iframe(
-                id='graph-frame',
-                style={
-                    'width': '100%', 
-                    'height': '400px', 
-                    'border': 'none', 
-                    'borderRadius': '12px', 
-                    'marginTop': '10px'
-                }
-            )
-        ], style={
-            'width': '40%', 
-            'display': 'inline-block', 
-            'verticalAlign': 'top',
-            'padding': '25px',
-            'backgroundColor': 'white',
-            'borderRadius': '12px',
-            'boxShadow': '0 4px 8px rgba(0,0,0,0.1)'
-        }),
-
-    ], style={
-        'display': 'flex',
-        'justifyContent': 'space-between', 
-        'alignItems': 'flex-start',
-        'gap': '60px',  # ESPACEMENT GLOBAL
-        'padding': '20px 0'
-    }),
-
-], style={
-    'padding': '20px', 
-    'backgroundColor': '#f4f7f9', 
-    'minHeight': '100vh'
-})
+                    labelStyle={'display': 'inline-block', 'marginRight': '10px'}
+                )
+            ], style={'width': '32%', 'display': 'inline-block', 'padding': '10px'})
+        ]),
+        
+        # IFrame Graphique
+        html.Iframe(
+            id='graph-frame',
+            style={'width': '100%', 'height': '600px', 'border': 'none', 'borderRadius': '8px', 'marginTop': '20px'}
+        )
+    ], style={'backgroundColor': 'white', 'padding': '20px', 'borderRadius': '10px'})
+])
 
 # ---------------------------
 # Callbacks
 # ---------------------------
-@app.callback(Output('year-display', 'children'), Input('year-slider', 'value'))
+@app.callback(
+    Output('year-display', 'children'),
+    Input('year-slider', 'value')
+)
 def update_year_display(year_index):
     return f"Année: {years[year_index]}"
 
-@app.callback(Output('graph-frame', 'src'),
-              [Input('pollutant-select', 'value'), Input('year-slider', 'value'), Input('graph-type', 'value')])
+@app.callback(
+    Output('graph-frame', 'src'),
+    [Input('pollutant-select', 'value'),
+     Input('year-slider', 'value'),
+     Input('graph-type', 'value')]
+)
 def update_graph(pollutant, year_index, graph_type):
     year = years[year_index]
     pollutant_clean = pollutant_file_map.get(pollutant, pollutant)
-    filename = f"{pollutant_clean}_{'histogram' if graph_type=='histogram' else 'scatter'}_{year}.html"
-    filepath = os.path.join(histogram_dir if graph_type=='histogram' else scatter_dir, filename)
-
+    
+    if graph_type == 'histogram':
+        filename = f"{pollutant_clean}_histogram_{year}.html"
+        filepath = os.path.join(histogram_dir, filename)
+    else:
+        filename = f"{pollutant_clean}_scatter_{year}.html"
+        filepath = os.path.join(scatter_dir, filename)
+    
     if os.path.exists(filepath):
-        with open(filepath, 'r', encoding='utf-8') as f:
-            html_content = f.read()
-        encoded = base64.b64encode(html_content.encode()).decode()
-        return f"data:text/html;base64,{encoded}"
+        try:
+            with open(filepath, 'r', encoding='utf-8') as f:
+                html_content = f.read()
+            html_encoded = base64.b64encode(html_content.encode()).decode()
+            return f"data:text/html;base64,{html_encoded}"
+        except Exception as e:
+            return create_error_page(f"Erreur: {str(e)}")
     else:
         return create_error_page(f"Fichier non trouvé: {filename}")
 
 # ---------------------------
-# Run server
+# Lancer le serveur et ouvrir automatiquement le navigateur
 # ---------------------------
 if __name__ == '__main__':
     url = "http://127.0.0.1:8050"
+    print("🌐 Démarrage du serveur Dash...")
+    print(f"📍 Accédez à: {url}")
+    
+    # Ouvre le navigateur automatiquement
     webbrowser.open(url)
-    app.run(debug=True, host='127.0.0.1', port=8050, use_reloader=False)
+    
+    # Lancer le serveur Dash
+    app.run(debug=True, host='127.0.0.1', port=8050, use_reloader=False) le code marche tres bien je veux mtn qqch d'esthétique sur mon dashboard 

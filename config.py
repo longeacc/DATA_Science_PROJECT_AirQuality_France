@@ -45,13 +45,12 @@ class treatment_data():
             self.data = self.data.drop(index=rows_to_remove, errors='ignore')
             print(f"Après suppression des lignes problématiques : {len(self.data)} lignes")
 
-            # Afficher les types de données uniques pour chaque colonne
             print("\nValeurs uniques par colonne :")
             for col in self.data.columns:
                 n_unique = self.data[col].nunique()
                 print(f"{col}: {n_unique} valeurs uniques")
 
-            # Identifier les colonnes catégorielles (avec un nombre limité de valeurs uniques)
+            # Identify categorical columns
             categorical_columns = [col for col in self.data.columns 
                                 if self.data[col].nunique() < 100 and self.data[col].dtype == 'object']
             
@@ -71,21 +70,18 @@ class treatment_data():
 
 
 if __name__ == "__main__":
-    # Créer une instance de la classe avec le chemin du fichier
+
     treatment = treatment_data('effectifs.csv')
     
-    # Charger les données
+    # Load data
     if treatment.load_data():
-        # Prétraiter les données
         processed_data = treatment.preprocess()
         if processed_data is not None:
             print("\nAperçu des données traitées :")
             print(processed_data.head())
             print(f"\nDimensions finales des données : {processed_data.shape}")
 
-# URL publique du dataset Zenodo
-
-# config.py
+# Zenodo dataset public URL
 
 DATA_URL = "https://zenodo.org/records/5043645/files/Indicateurs_QualiteAir_France_Commune_2000-2015_Ineris_v.Sep2020.zip?download=1"
 

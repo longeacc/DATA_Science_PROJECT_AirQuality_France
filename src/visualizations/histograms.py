@@ -3,14 +3,10 @@ from plotly.io import write_html
 
 def create_pollution_histogram(data, pollutant_type):
     """
-    Crée un histogramme pour NO2, PM10 , O3, Somo35, AOT 40 ou PM25.
-    
-    Args:
-        data (pd.DataFrame): Le DataFrame contenant les données
-        pollutant_type (str): Type de polluant ("NO2", "PM10" ou "O3")
-    
+    Creates a histogram for NO₂, PM₁₀, O₃, SOMO₃₅, AOT₄₀, or PM₂.₅.
+
     Returns:
-        plotly.graph_objects.Figure: La figure créée
+    plotly.graph_objects.Figure: The created figure
     """
     if pollutant_type == 'Somo 35':
         column_name = 'Moyenne annuelle de somo 35 (ug/m3.jour)'

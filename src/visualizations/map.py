@@ -5,23 +5,20 @@ import sqlite3
 import json
 import os
 
-# Créer le dossier de sortie s'il n'existe pas
-# Créer le dossier assets s'il n'existe pas
 output_dir = "assets"
 os.makedirs(output_dir, exist_ok=True)
 
 
 print("🔄 Chargement des données depuis la base de données...")
 
-# --- Charger les données depuis la base de données SQLite ---
+# --- Load data from the SQLite database ---
 base_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
 db_path = os.path.join(base_dir, "data", "air_quality.db")
 
-# Connexion à la base de données
+# Connect to the database
 conn = sqlite3.connect(db_path)
 
-# Requête pour récupérer toutes les données nécessaires (dédupliquées)
-# Utilisation de DISTINCT pour éviter les doublons
+# Using DISTINCT to avoid duplicates
 query = """
 SELECT DISTINCT com_insee, commune, population, annee, 
        pm25, pm10, no2, o3, aot40, somo35
@@ -47,18 +44,18 @@ df_pollution = df_pollution.rename(columns={
     'somo35': 'Moyenne annuelle de concentration de somo 35 (ug/m3.j)'
 })
 
-# --- Charger les coordonnées des communes ---
+# --- Load the contact details for the municipalities ---
 df_communes = pd.read_csv(os.path.join(base_dir, "data", "cleaned", "base-officielle-codes-postaux.csv"), dtype={"code_commune_insee": str})
 
-# --- Dédupliquer les communes (une commune peut avoir plusieurs codes postaux) ---
+# --- Deduplicate municipalities ---
 df_communes = df_communes.drop_duplicates(subset=['code_commune_insee'], keep='first')
 print(f"✅ Communes uniques avec coordonnées: {len(df_communes)}")
 
-# --- Préparer les colonnes pour le merge ---
+# --- Prepare columns for merge ---
 df_pollution['COM Insee'] = df_pollution['COM Insee'].astype(str)
 df_communes['code_commune_insee'] = df_communes['code_commune_insee'].astype(str)
 
-# --- Merge pour ajouter latitude, longitude et nom_commune ---
+    # --- Merge to add latitude, longitude, and commune name ---
 df_merged = df_pollution.merge(
     df_communes[['code_commune_insee', 'latitude', 'longitude', 'nom_de_la_commune']],
     left_on='COM Insee',
@@ -66,12 +63,12 @@ df_merged = df_pollution.merge(
     how='left'
 )
 
-# --- Filtrer les données valides ---
+# --- Filter valid data ---
 df_map = df_merged.dropna(subset=['latitude', 'longitude']).copy()
 
 print(f"✅ Données chargées : {len(df_map)} communes avec coordonnées")
 
-# --- Définir les polluants ---
+# Polluants
 pollutants = {
     'PM10': 'Moyenne annuelle de concentration de PM10 (ug/m3)',
     'PM25': 'Moyenne annuelle de concentration de PM2.5 (ug/m3)',
@@ -81,11 +78,11 @@ pollutants = {
     'SOMO35': 'Moyenne annuelle de concentration de somo 35 (ug/m3.j)'
 }
 
-# --- Obtenir les années disponibles ---
+# Get available years
 years = sorted([int(y) for y in df_map['Année'].unique()])
 print(f"📅 Années disponibles : {years}")
 
-# --- Créer un dictionnaire de données par année et par commune ---
+# Create a data dictionary by year and by municipality
 data_by_year = {}
 for year in years:
     df_year = df_map[df_map['Année'] == year]
@@ -100,12 +97,12 @@ for year in years:
             'population': int(row['Population']) if pd.notna(row['Population']) else 0,
         }
         
-        # Ajouter les concentrations de polluants
+        # Add pollutant concentrations
         for pollutant_key, pollutant_col in pollutants.items():
             if pollutant_col in row and pd.notna(row[pollutant_col]):
                 data_by_year[year][commune_key][pollutant_key] = float(row[pollutant_col])
 
-# --- Créer le HTML/JS pour la carte interactive ---
+
 html_content = """
 <!DOCTYPE html>
 <html>
@@ -519,7 +516,7 @@ html_content += """
 </html>
 """
 
-# --- Sauvegarder la carte ---
+# --- Save the map ---
 output_path = os.path.join(output_dir, 'interactive_pollution_map.html')
 
 with open(output_path, 'w', encoding='utf-8') as f:

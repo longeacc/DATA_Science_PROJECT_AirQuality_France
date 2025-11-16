@@ -13,11 +13,11 @@ def create_pollution_scatter(data, insee_to_commune, pollutant_type):
     Returns:
         plotly.graph_objects.Figure: La figure créée
     """
-    # Filtrer les communes avec plus de 1500 habitants et trier par population
+    # Filter municipalities with more than 1,500 inhabitants and sort by population
     data_filtered = data[data['Population'] > 1500]
     data_sorted = data_filtered.sort_values('Population', ascending=True)
     
-    # Préparer les données
+    # Prepare data
     communes = [insee_to_commune[code] for code in data_sorted['COM Insee']]
     if pollutant_type == 'Somo 35':
         column_name = 'Moyenne annuelle de somo 35 (ug/m3.jour)'
@@ -30,7 +30,7 @@ def create_pollution_scatter(data, insee_to_commune, pollutant_type):
     concentrations = data_sorted[column_name]
     populations = data_sorted['Population']
     
-    # Créer le graphique
+    # Create the plot
     trace = go.Scatter(
         x=communes,
         y=concentrations,

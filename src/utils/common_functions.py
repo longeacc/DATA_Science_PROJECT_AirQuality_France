@@ -10,12 +10,9 @@ from sklearn.metrics import classification_report, confusion_matrix
 from plotly.offline import plot as write_html
 import sys
 
-# Ajouter le chemin du répertoire parent pour pouvoir importer les modules
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from visualizations.scatter_plots import create_pollution_scatter
 from visualizations.histograms import create_pollution_histogram
-
-# Functions to charge and load graph abou data
 
 class read_data:
     def __init__(self):
@@ -24,42 +21,38 @@ class read_data:
     @staticmethod
     def load_data(file_path):
         """
-        Charge les données depuis un fichier CSV avec gestion des erreurs et du formatage.
-        
-        Args:
-            file_path (str): Chemin vers le fichier CSV à charger
-            
-        Returns:
-            pandas.DataFrame: DataFrame contenant les données chargées, ou None en cas d'erreur
+        Loads data from a CSV file with error handling and formatting.
+
+Args:
+file_path (str): Path to the CSV file to load
+
+Returns:
+pandas.DataFrame: DataFrame containing the loaded data, or None in case of error
         """
         try:
             if file_path is None:
                 raise ValueError("Le chemin du fichier ne peut pas être None")
             
-            # Vérifier si le fichier existe
             if not os.path.exists(file_path):
                 print(f"ERREUR : Le fichier '{file_path}' n'existe pas.")
                 return None
                 
-            # Lire le fichier en ignorant la première ligne (description)
             data = pd.read_csv(
                 file_path,
-                encoding='cp1252',    # Encodage Windows par défaut
-                skiprows=1,           # Ignorer la première ligne de description
-                sep=',',              # Utiliser la virgule comme séparateur
-                decimal='.',          # Le point comme séparateur décimal
-                thousands=None,       # Pas de séparateur de milliers
+                encoding='cp1252',    
+                skiprows=1,           
+                sep=',',              
+                decimal='.',          
+                thousands=None,       
                 low_memory=False
             )
             
-            # Vérifier si nous avons le bon nombre de colonnes
             if len(data.columns) not in [12, 14]:
                 print(f"ATTENTION : Nombre incorrect de colonnes ({len(data.columns)}). Attendu : 12 ou 14")
                 print("Colonnes trouvées :")
                 print(data.columns.tolist())
                 return None
                 
-            # Vérifier les colonnes requises
             required_columns = [
                 'COM Insee',
                 'Commune',
@@ -87,22 +80,19 @@ class read_data:
             print(f"ERREUR : Problème lors du chargement du fichier '{file_path}' : {e}")
             return None
     
-    # Fonction pour traiter les données après le chargement
     @staticmethod
     def process_data(df):
-        """
-        Traite les données pour s'assurer que les colonnes sont correctement séparées et typées.
-        """
+        """    
+Processes the data to ensure that the columns are correctly separated and typed.    
+"""
         if df is None:
             return None
         
         try:
-            # Convertir les colonnes numériques
-            numeric_columns = df.columns[2:]  # Toutes les colonnes après 'Commune' sont numériques
+            numeric_columns = df.columns[2:]
             for col in numeric_columns:
                 df[col] = pd.to_numeric(df[col], errors='coerce')
             
-            # Vérifier la cohérence des données
             print("\nVérification de la cohérence des données :")
             print(f"Nombre total de lignes : {len(df)}")
             print(f"Nombre de colonnes : {len(df.columns)}")
@@ -115,23 +105,13 @@ class read_data:
 
     @staticmethod
     def create_commune_insee_dict(df):
-        """
-        Crée un dictionnaire complet des correspondances entre codes INSEE et noms des communes.
-        
-        Args:
-            df (pandas.DataFrame): DataFrame contenant obligatoirement :
-                - 'COM Insee' : colonne avec les codes INSEE (type: str ou int)
-                - 'Commune' : colonne avec les noms des communes (type: str)
-        
-        Returns:
-            tuple: (commune_to_insee, insee_to_commune)
-                - commune_to_insee (dict): {nom_commune (str): code_insee (str)}
-                - insee_to_commune (dict): {code_insee (str): nom_commune (str)}
-        
-        Exemple d'utilisation:
-            >>> commune_to_insee, insee_to_commune = read_data.create_commune_insee_dict(data)
-            >>> code_insee = commune_to_insee["Paris"]
-            >>> nom_commune = insee_to_commune["75056"]
+        """ 
+        Creates a complete dictionary of correspondences between INSEE codes and municipality names. 
+     
+        Returns: 
+            tuple: (municipality_to_insee, insee_to_municipality)
+                - commune_to_insee (dict): {commune_name (str): INSEE_code (str)}
+- INSEE_to_commune (dict): {INSEE_code (str): commune_name (str)}
         """
         if df is None:
             print("Erreur : DataFrame non fourni")
@@ -143,17 +123,17 @@ class read_data:
             return None, None
             
         try:
-            # Convertir les codes INSEE en string pour assurer la cohérence
+            # Convert INSEE codes to string for consistency
             df['COM Insee'] = df['COM Insee'].astype(str)
             
-            # Supprimer les doublons éventuels
+            # Remove any potential duplicates
             df_unique = df[['Commune', 'COM Insee']].drop_duplicates()
             
-            # Créer les dictionnaires
+            # Create the dictionaries
             commune_to_insee = dict(zip(df_unique['Commune'], df_unique['COM Insee']))
             insee_to_commune = dict(zip(df_unique['COM Insee'], df_unique['Commune']))
             
-            # Vérification et rapport
+            
             print(f"\nDictionnaires créés avec succès:")
             print(f"- Nombre total de communes : {len(commune_to_insee)}")
             print(f"- Nombre de codes INSEE uniques : {len(insee_to_commune)}")
@@ -161,7 +141,7 @@ class read_data:
             if len(commune_to_insee) != len(insee_to_commune):
                 print("\nATTENTION : Certaines communes ont le même code INSEE ou vice-versa")
             
-            # Afficher quelques exemples
+            
             print("\nExemples de correspondances :")
             for commune, insee in list(commune_to_insee.items())[:5]:
                 print(f"Commune: {commune:30} -> Code INSEE: {insee}")
@@ -180,26 +160,25 @@ class read_data:
 
 
 def load_commune_mappings():
-    """
-    Charge les correspondances entre codes INSEE et noms de communes.
+    """    
+    Loads the correspondences between INSEE codes and municipality names.
     
     Args:
-        year (int): L'année pour laquelle charger les données (par défaut: 2000)
+        year (int): The year for which to load the data (default: 2000)
         
     Returns:
-        tuple: (commune_to_insee, insee_to_commune) dictionnaires de correspondance
+        tuple: (municipality_to_insee, insee_to_municipality) correspondence dictionaries
     """
     try:
-        # Charger le fichier CSV
+        # Upload the CSV file
         script_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
         data_path = os.path.join(script_dir, "data", "raw", "Indicateurs_QualiteAir_France_Commune_2000_Ineris_v.Sep2020.csv")
         
-        # Utiliser la méthode load_data de la classe read_data
         data = read_data.load_data(data_path)
         if data is None:
             raise ValueError("Impossible de charger les données pour les correspondances communes")
         
-        # Créer les dictionnaires de correspondance
+        # Create the mapping dictionaries
         commune_to_insee = dict(zip(data['Commune'], data['COM Insee']))
         insee_to_commune = dict(zip(data['COM Insee'], data['Commune']))
         
@@ -211,14 +190,14 @@ def load_commune_mappings():
 
 
 def load_data_for_year(year):
-    """
-    Charge les données pour une année spécifique.
-    
-    Args:
-        year (int): L'année pour laquelle charger les données
+    """    
+    Loads data for a specific year.    
         
-    Returns:
-        pd.DataFrame: Les données pour l'année spécifiée, ou None en cas d'erreur
+    Args:    
+        year (int): The year for which to load data.    
+        
+    Returns:    
+        pd.DataFrame: Data for the specified year, or None if an error occurs.    
     """
     try:
         if year == 2006:
@@ -240,46 +219,41 @@ def load_data_for_year(year):
 
 
 def process_and_visualize_data(data, insee_to_commune):
-    """
-    Traite et visualise les données de pollution de l'air sur plusieurs années.
+    """    
+Processes and visualises air pollution data over several years.
     
     Args:
-        data (pd.DataFrame): Le DataFrame contenant les données
-        insee_to_commune (dict): Dictionnaire de correspondance codes INSEE vers noms de communes
+        data (pd.DataFrame): The DataFrame containing the data
+        insee_to_commune (dict): Dictionary mapping INSEE codes to commune names
         
     Returns:
-        dict: Dictionnaire contenant les figures générées
+        dict: Dictionary containing the generated figures
     """
-    # Créer le dossier de sortie s'il n'existe pas
+    
     script_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
     output_dir = os.path.join(script_dir, 'output')
     os.makedirs(output_dir, exist_ok=True)
     print(f"\nDossier de sortie créé : {output_dir}")
     
-    # Dictionnaire pour stocker toutes les figures
+    
     all_figures = {}
     
-    # Traiter chaque année
     for year in sorted(data['Année'].unique()):
         print(f"\nCréation des visualisations pour l'année {year}...")
         year_data = data[data['Année'] == year]
         
-        # Créer les visualisations pour chaque polluant
         for pollutant in ['NO2', 'PM10', 'O3']:
-            # Graphique de dispersion
+            
             fig_scatter = create_pollution_scatter(year_data, insee_to_commune, pollutant)
             
-            # Histogramme
             fig_hist = create_pollution_histogram(year_data, pollutant)
             
-            # Sauvegarder les visualisations
             scatter_file = os.path.join(output_dir, f'{pollutant}_moyenne_annuelle_{year}.html')
             hist_file = os.path.join(output_dir, f'{pollutant}_histogram_{year}.html')
             
             write_html(fig_scatter, scatter_file, auto_open=False, include_plotlyjs='cdn')
             write_html(fig_hist, hist_file, auto_open=False, include_plotlyjs='cdn')
             
-            # Stocker les figures
             all_figures[f'{pollutant}_scatter_{year}'] = fig_scatter
             all_figures[f'{pollutant}_histogram_{year}'] = fig_hist
     

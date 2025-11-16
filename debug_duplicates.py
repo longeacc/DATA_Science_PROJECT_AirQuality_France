@@ -4,7 +4,7 @@ import pandas as pd
 db_path = "data/air_quality.db"
 conn = sqlite3.connect(db_path)
 
-# Vérifier le nombre de lignes par commune et année
+# Check the number of lines per municipality and year
 query = """
 SELECT com_insee, annee, COUNT(*) as count
 FROM air_quality
@@ -16,7 +16,7 @@ df_dup = pd.read_sql_query(query, conn)
 print("Communes avec duplications:")
 print(df_dup)
 
-# Compter le total de lignes avec duplications
+# Count the total number of lines with duplicates
 query2 = """
 SELECT COUNT(*) as total_groups, SUM(count) as total_rows
 FROM (
@@ -30,7 +30,7 @@ df_count = pd.read_sql_query(query2, conn)
 print("\nStatistiques des duplications:")
 print(df_count)
 
-# Vérifier une commune spécifique
+# Check a specific municipality
 query3 = """
 SELECT *
 FROM air_quality

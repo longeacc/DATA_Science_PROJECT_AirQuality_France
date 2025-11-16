@@ -1,9 +1,9 @@
 import os
 
 def create_histograms_viewer():
-    # Nouveau dossier où se trouvent les fichiers HTML
+    
     output_dir = "output/FINAL_superposed_graphs_map"
-    html_source_dir = "../output_csv"  # <-- dossier contenant les histogrammes HTML
+    html_source_dir = "../output_csv"  # directory containing the histogram HTML files
 
     pollutants = ["NO2", "PM10", "O3", "somo 35", "PM25", "AOT 40"]
     years = list(range(2000, 2016))
@@ -94,7 +94,7 @@ def create_histograms_viewer():
 """
 
     for year in years:
-        if year != 2000:  # Éviter la même année par défaut
+        if year != 2000:  # Avoid the same year by default
             html_content += f'                    <option value="{year}">{year}</option>\n'
         else:
             html_content += f'                    <option value="{year}" selected>{year}</option>\n'

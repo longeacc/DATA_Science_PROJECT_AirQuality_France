@@ -1,45 +1,6 @@
-# """
-# Script pour générer des graphiques de pollution en France.
-# Crée des histogrammes et des scatter plots pour chaque polluant et année.
-# """
-
-# import pandas as pd
-# import os
-# from plotly.io import write_html
-# from src.utils.common_functions import load_commune_mappings, load_data_for_year
-# from src.visualizations.scatter_plots import create_pollution_scatter
-# from src.visualizations.histograms import create_pollution_histogram
-
-# def main():
-#     """
-#     Fonction principale du script pour générer des graphiques.
-#     """
-#     try:
-#         print("\nChargement des données pour toutes les années...")
-#         data = pd.DataFrame()
-        
-#         commune_to_insee, insee_to_commune = load_commune_mappings()
-#         if commune_to_insee is None or insee_to_commune is None:
-#             print("Erreur : Impossible de charger les correspondances des communes.")
-#             return
-        
-#         print(f"Correspondances des communes chargées : {len(commune_to_insee)} communes")
-        
-#         for year in range(2000, 2016):
-#             if year == 2006:
-#                 continue
-#             print(f"\nChargement des données pour l'année {year}...")
-#             year_data = load_data_for_year(year)
-#             if year_data is not None:
-#                 communes_manquantes = [c for c in year_data['Commune'] if c not in commune_to_insee]
-#                 if communes_manquantes:
-#                     print(f"Attention : {len(communes_manquantes)} communes non trouvées en {year}")
-#                 data = pd.concat([data, year_data], ignore_index=True)
-        
-#         if data.empty:
 import os
 import html
-
+import dash
 
 def generate_dashboard():
     """
@@ -241,6 +202,3 @@ if __name__ == '__main__':
     import webbrowser
     dashboard_file = generate_dashboard()
     webbrowser.open(f'file:///{dashboard_file.replace(os.sep, "/")}') 
-
-
-a=1

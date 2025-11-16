@@ -5,8 +5,8 @@ from config import DATA_URL, RAW_DATA_PATH
 
 def get_data():
     """
-    Télécharge le fichier ZIP depuis Zenodo et le stocke dans data/raw/.
-    Puis décompresse son contenu dans data/raw/.
+    Download the ZIP file from Zenodo and store it in data/raw/.
+Then unzip its contents into data/raw/.
     """
     raw_folder = os.path.dirname(RAW_DATA_PATH)
     os.makedirs(raw_folder, exist_ok=True)
@@ -21,12 +21,11 @@ def get_data():
         f.write(response.content)
     print(f" Fichier ZIP enregistré dans {zip_path}")
 
-    # Décompression
+    
     with zipfile.ZipFile(zip_path, 'r') as zip_ref:
         zip_ref.extractall(raw_folder)
     print(f" Fichiers extraits dans {raw_folder}")
 
-    # Supprime le ZIP temporaire
     os.remove(zip_path)
     print(" Téléchargement et extraction terminés.")
 

@@ -2,15 +2,18 @@ import os
 import webbrowser
 
 def create_scatter_viewer():
-    # Dossier contenant les SCATTER HTML
+    """
+    Create an HTML viewer for superposed scatter plots of air pollutants.
+    """
+    # Directory containing the SCATTER HTML files
     html_source_dir = os.path.abspath("output_csv").replace("\\", "/")
 
-    # Dossier où sera créé le viewer
+    # Directory where the viewer will be created
     output_path = "output/FINAL_superposed_graphs_map/FINAL_scatter_viewer.html"
     os.makedirs(os.path.dirname(output_path), exist_ok=True)
 
     pollutants = ["NO2", "PM10", "O3", "SOMO35", "PM25"]
-    years = [y for y in range(2000, 2016) if y != 2006]  # 2000-2015 sauf 2006
+    years = [y for y in range(2000, 2016) if y != 2006]
 
     # ----------------------------------------------
     # HTML VIEWER

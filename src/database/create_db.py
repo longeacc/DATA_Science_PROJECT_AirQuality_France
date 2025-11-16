@@ -18,7 +18,7 @@ def create_database():
     print(f"Chargement du fichier nettoyé : {data_path}")
     
     if not os.path.exists(data_path):
-        print(f"❌ Fichier CSV introuvable : {data_path}")
+        print(f"Fichier CSV introuvable : {data_path}")
         return False
         
     df = pd.read_csv(data_path)
@@ -87,13 +87,13 @@ def create_database():
     # Vérification
     count = cursor.execute("SELECT COUNT(*) FROM air_quality").fetchone()[0]
     
-    print(f"✅ Base de données créée avec succès : {db_path}")
+    print(f" Base de données créée avec succès : {db_path}")
     print(f"Nombre de lignes insérées : {count}")
 
     # Test query
     query = "SELECT annee, COUNT(*) as nb_communes, AVG(no2) as moyenne_no2 FROM air_quality GROUP BY annee;"
     df_test = pd.read_sql_query(query, conn)
-    print("\📊 Données par année :")
+    print("\ Données par année :")
     print(df_test)
 
     conn.close()

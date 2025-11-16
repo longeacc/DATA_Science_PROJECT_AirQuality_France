@@ -16,14 +16,14 @@ data_folder = os.path.join(base_dir, "data", "raw")
 output_folder = os.path.join(base_dir, "data", "cleaned")
 os.makedirs(output_folder, exist_ok=True)
 
-print("📁 Dossier source :", data_folder)
-print("💾 Dossier de sortie :", output_folder)
+print(" Dossier source :", data_folder)
+print(" Dossier de sortie :", output_folder)
 
 # List all CSV files
 all_files = glob.glob(os.path.join(data_folder, "*.csv"))
 
 if not all_files:
-    print("⚠️ Aucun fichier CSV trouvé dans le dossier raw !")
+    print(" Aucun fichier CSV trouvé dans le dossier raw !")
     exit()
 
 list_of_dfs = []
@@ -88,5 +88,5 @@ print(f"🔹 Nombre de doublons par 'COM Insee' et 'Année' : {duplicated_count}
 output_path = os.path.join(output_folder, "cleaned_air_quality_with_year.csv")
 final_df.to_csv(output_path, index=False)
 
-print("✅ Fusion et nettoyage terminés ! Dimension du DataFrame :", final_df.shape)
-print("💾 Fichier sauvegardé dans :", output_path)
+print(" Fusion et nettoyage terminés ! Dimension du DataFrame :", final_df.shape)
+print(" Fichier sauvegardé dans :", output_path)

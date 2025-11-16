@@ -16,7 +16,7 @@ def load_data_from_database():
     db_path = os.path.join(base_dir, "data", "air_quality.db")
 
     if not os.path.exists(db_path):
-        print(f"❌ Base de données introuvable : {db_path}")
+        print(f" Base de données introuvable : {db_path}")
         return None
 
     conn = sqlite3.connect(db_path)
@@ -69,7 +69,7 @@ def generate_visualizations():
             return
         df, base_dir = result
 
-        print(f"✅ {len(df)} lignes chargées depuis la base de données\n")
+        print(f" {len(df)} lignes chargées depuis la base de données\n")
 
         # Préparer les données
         df = prepare_data(df)
@@ -83,7 +83,7 @@ def generate_visualizations():
         # Charger les correspondances des communes
         commune_to_insee, insee_to_commune = load_commune_mappings()
         if commune_to_insee is None or insee_to_commune is None:
-            print("❌ Impossible de charger les correspondances des communes.")
+            print(" Impossible de charger les correspondances des communes.")
             return
 
         # Vérification des années disponibles
@@ -111,21 +111,21 @@ def generate_visualizations():
 
         # Génération des graphiques
         for année in années:
-            print(f"📅 Traitement de l'année {année}...")
+            print(f" Traitement de l'année {année}...")
             data_année = df[df["Année"] == année]
 
             for polluant, colonne in noms_colonnes.items():
                 # Vérification plus détaillée
                 if colonne not in data_année.columns:
-                    print(f"  ⚠️ Colonne '{colonne}' non trouvée pour {polluant} en {année}")
+                    print(f"Colonne '{colonne}' non trouvée pour {polluant} en {année}")
                     continue
                 
                 # Vérifier s'il y a des données non nulles
                 if data_année[colonne].isna().all():
-                    print(f"  ⚠️ Données manquantes pour {polluant} en {année}")
+                    print(f"Données manquantes pour {polluant} en {année}")
                     continue
 
-                print(f"  → Génération des graphiques pour {polluant}...")
+                print(f"Génération des graphiques pour {polluant}...")
 
                 try:
                     # Créer et sauvegarder le graphique de dispersion
@@ -138,14 +138,14 @@ def generate_visualizations():
                     hist_file = os.path.join(output_dir, f"{polluant.replace(' ', '_')}_{année}_histogram.html")
                     write_html(fig_hist, hist_file, auto_open=False, include_plotlyjs='cdn')
 
-                    print(f"    ✓ Graphiques générés avec succès pour {polluant}")
+                    print(f"Graphiques générés avec succès pour {polluant}")
                 except Exception as e:
-                    print(f"    ✗ Erreur sur {polluant} ({année}) : {str(e)}")
+                    print(f"Erreur sur {polluant} ({année}) : {str(e)}")
 
-        print("\n✅ Toutes les visualisations ont été générées dans le dossier 'output'.")
+        print("\nToutes les visualisations ont été générées dans le dossier 'output'.")
 
     except Exception as e:
-        print(f"\n❌ Une erreur s'est produite : {str(e)}")
+        print(f"\n Une erreur s'est produite : {str(e)}")
 
 
 if __name__ == "__main__":

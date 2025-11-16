@@ -200,7 +200,7 @@ def create_histograms_viewer():
     with open(output_path, "w", encoding="utf-8") as f:
         f.write(html_content)
     
-    print(f"✅ Fichier {output_path} créé avec succès")
+    print(f" Fichier {output_path} créé avec succès")
 
 if __name__ == "__main__":
     create_histograms_viewer()

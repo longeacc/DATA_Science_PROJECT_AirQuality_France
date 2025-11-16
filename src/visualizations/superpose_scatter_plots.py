@@ -107,7 +107,7 @@ def create_scatter_viewer():
     with open(output_path, "w", encoding="utf-8") as f:
         f.write(html_content)
 
-    print(f"✅ Viewer SCATTER créé : {output_path}")
+    print(f" Viewer SCATTER créé : {output_path}")
     webbrowser.open('file://' + os.path.abspath(output_path))
 
 

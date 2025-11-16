@@ -115,200 +115,200 @@ html_content = """
     <title>Carte Interactive de la Pollution en France</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
-        body {
-            margin: 0;
-            padding: 0;
-            font-family: Arial, sans-serif;
-        }
-        
-        #map {
-            position: absolute;
-            top: 0;
-            bottom: 0;
-            left: 0;
-            right: 0;
-        }
-        
-        #map-title {
-            position: absolute;
-            top: 10px;
-            left: 50%;
-            transform: translateX(-50%);
-            background: white;
-            padding: 15px 30px;
-            border-radius: 8px;
-            box-shadow: 0 4px 8px rgba(0,0,0,0.3);
-            z-index: 1000;
-            font-family: Arial, sans-serif;
-            font-size: 20px;
-            font-weight: bold;
-            color: #2c3e50;
-            text-align: center;
-        }
-        
-        #year-control {
-            position: absolute;
-            top: 10px;
-            right: 10px;
-            background: white;
-            padding: 12px 15px;
-            border-radius: 8px;
-            box-shadow: 0 4px 8px rgba(0,0,0,0.3);
-            z-index: 1000;
-            font-family: Arial, sans-serif;
-            width: 200px;
-        }
-        
-        #pollutant-control {
-            position: absolute;
-            top: 120px;
-            right: 10px;
-            background: white;
-            padding: 15px;
-            border-radius: 8px;
-            box-shadow: 0 4px 8px rgba(0,0,0,0.3);
-            z-index: 1000;
-            font-family: Arial, sans-serif;
-            width: 200px;
-            max-height: 300px;
-            overflow-y: auto;
-        }
-        
-        #legend {
-            position: absolute;
-            bottom: 30px;
-            right: 10px;
-            background: white;
-            padding: 15px;
-            border-radius: 8px;
-            box-shadow: 0 4px 8px rgba(0,0,0,0.3);
-            z-index: 1000;
-            font-family: Arial, sans-serif;
-            width: 200px;
-        }
-        
-        #year-slider {
-            width: 100%;
-            height: 6px;
-            border-radius: 5px;
-            background: #d3d3d3;
-            outline: none;
-            -webkit-appearance: none;
-            margin-top: 8px;
-        }
-        
-        #year-slider::-webkit-slider-thumb {
-            -webkit-appearance: none;
-            appearance: none;
-            width: 16px;
-            height: 16px;
-            border-radius: 50%;
-            background: #4CAF50;
-            cursor: pointer;
-        }
-        
-        #year-slider::-moz-range-thumb {
-            width: 16px;
-            height: 16px;
-            border-radius: 50%;
-            background: #4CAF50;
-            cursor: pointer;
-            border: none;
-        }
-        
-        #year-display {
-            text-align: center;
-            font-size: 18px;
-            font-weight: bold;
-            color: #2c3e50;
-            margin-bottom: 5px;
-        }
-        
-        .control-label {
-            font-size: 12px;
-            color: #666;
-            margin-bottom: 5px;
-            display: block;
-        }
-        
-        .pollutant-checkbox {
-            display: flex;
-            align-items: center;
-            margin: 6px 0;
-            padding: 4px;
-            border-radius: 4px;
-            transition: background-color 0.2s;
-        }
-        
-        .pollutant-checkbox:hover {
-            background-color: #f0f0f0;
-        }
-        
-        .pollutant-checkbox input {
-            margin-right: 8px;
-            width: 16px;
-            height: 16px;
-            cursor: pointer;
-        }
-        
-        .pollutant-checkbox label {
-            cursor: pointer;
-            user-select: none;
-            font-size: 13px;
-        }
-        
-        h3 {
-            margin-top: 0;
-            margin-bottom: 12px;
-            color: #2c3e50;
-            font-size: 14px;
-            border-bottom: 2px solid #4CAF50;
-            padding-bottom: 6px;
-        }
-        
-        .legend-scale {
-            margin-top: 10px;
-        }
-        
-        .legend-item {
-            display: flex;
-            align-items: center;
-            margin: 5px 0;
-            font-size: 12px;
-        }
-        
-        .legend-color {
-            width: 30px;
-            height: 15px;
-            margin-right: 8px;
-            border-radius: 2px;
-        }
-        
-        .leaflet-popup-content {
-            font-family: Arial, sans-serif;
-        }
-        
-        .popup-title {
-            font-size: 16px;
-            font-weight: bold;
-            color: #2c3e50;
-            margin-bottom: 10px;
-            border-bottom: 2px solid #4CAF50;
-            padding-bottom: 5px;
-        }
-        
-        .popup-info {
-            margin: 5px 0;
-            font-size: 13px;
-        }
-        
-        .popup-pollutant {
-            background-color: #f8f9fa;
-            padding: 5px;
-            margin: 3px 0;
-            border-radius: 3px;
-        }
-    </style>
+    body {
+        margin: 0;
+        padding: 0;
+        font-family: Arial, sans-serif;
+    }
+    
+    #map {
+        position: absolute;
+        top: 0;
+        bottom: 0;
+        left: 20px !important;
+        right: 20px !important;
+    }
+    
+    #map-title {
+        position: absolute;
+        top: 10px;
+        left: 50%;
+        transform: translateX(-50%);
+        background: white;
+        padding: 15px 30px;
+        border-radius: 8px;
+        box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+        z-index: 1000;
+        font-family: Arial, sans-serif;
+        font-size: 20px;
+        font-weight: bold;
+        color: #2c3e50;
+        text-align: center;
+    }
+    
+    #year-control {
+        position: absolute;
+        top: 10px;
+        right: 10px;
+        background: white;
+        padding: 12px 15px;
+        border-radius: 8px;
+        box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+        z-index: 1000;
+        font-family: Arial, sans-serif;
+        width: 200px;
+    }
+    
+    #pollutant-control {
+        position: absolute;
+        top: 120px;
+        right: 10px;
+        background: white;
+        padding: 15px;
+        border-radius: 8px;
+        box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+        z-index: 1000;
+        font-family: Arial, sans-serif;
+        width: 200px;
+        max-height: 300px;
+        overflow-y: auto;
+    }
+    
+    #legend {
+        position: absolute;
+        bottom: 30px;
+        right: 10px;
+        background: white;
+        padding: 15px;
+        border-radius: 8px;
+        box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+        z-index: 1000;
+        font-family: Arial, sans-serif;
+        width: 200px;
+    }
+    
+    #year-slider {
+        width: 100%;
+        height: 6px;
+        border-radius: 5px;
+        background: #d3d3d3;
+        outline: none;
+        -webkit-appearance: none;
+        margin-top: 8px;
+    }
+    
+    #year-slider::-webkit-slider-thumb {
+        -webkit-appearance: none;
+        appearance: none;
+        width: 16px;
+        height: 16px;
+        border-radius: 50%;
+        background: #4CAF50;
+        cursor: pointer;
+    }
+    
+    #year-slider::-moz-range-thumb {
+        width: 16px;
+        height: 16px;
+        border-radius: 50%;
+        background: #4CAF50;
+        cursor: pointer;
+        border: none;
+    }
+    
+    #year-display {
+        text-align: center;
+        font-size: 18px;
+        font-weight: bold;
+        color: #2c3e50;
+        margin-bottom: 5px;
+    }
+    
+    .control-label {
+        font-size: 12px;
+        color: #666;
+        margin-bottom: 5px;
+        display: block;
+    }
+    
+    .pollutant-checkbox {
+        display: flex;
+        align-items: center;
+        margin: 6px 0;
+        padding: 4px;
+        border-radius: 4px;
+        transition: background-color 0.2s;
+    }
+    
+    .pollutant-checkbox:hover {
+        background-color: #f0f0f0;
+    }
+    
+    .pollutant-checkbox input {
+        margin-right: 8px;
+        width: 16px;
+        height: 16px;
+        cursor: pointer;
+    }
+    
+    .pollutant-checkbox label {
+        cursor: pointer;
+        user-select: none;
+        font-size: 13px;
+    }
+    
+    h3 {
+        margin-top: 0;
+        margin-bottom: 12px;
+        color: #2c3e50;
+        font-size: 14px;
+        border-bottom: 2px solid #4CAF50;
+        padding-bottom: 6px;
+    }
+    
+    .legend-scale {
+        margin-top: 10px;
+    }
+    
+    .legend-item {
+        display: flex;
+        align-items: center;
+        margin: 5px 0;
+        font-size: 12px;
+    }
+    
+    .legend-color {
+        width: 30px;
+        height: 15px;
+        margin-right: 8px;
+        border-radius: 2px;
+    }
+    
+    .leaflet-popup-content {
+        font-family: Arial, sans-serif;
+    }
+    
+    .popup-title {
+        font-size: 16px;
+        font-weight: bold;
+        color: #2c3e50;
+        margin-bottom: 10px;
+        border-bottom: 2px solid #4CAF50;
+        padding-bottom: 5px;
+    }
+    
+    .popup-info {
+        margin: 5px 0;
+        font-size: 13px;
+    }
+    
+    .popup-pollutant {
+        background-color: #f8f9fa;
+        padding: 5px;
+        margin: 3px 0;
+        border-radius: 3px;
+    }
+</style>
 </head>
 <body>
     <div id="map-title">

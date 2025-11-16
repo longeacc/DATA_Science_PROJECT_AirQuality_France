@@ -37,259 +37,207 @@
 #                 data = pd.concat([data, year_data], ignore_index=True)
         
 #         if data.empty:
-#             print("Erreur : aucune donnée chargée.")
-#             return
-
-#         # Créer les dossiers de sortie
-#         script_dir = os.path.dirname(os.path.abspath(__file__))
-#         output_hist_dir = os.path.join(script_dir, 'assets', 'html_histograms')
-#         output_scatter_dir = os.path.join(script_dir, 'assets', 'scatter')
-#         os.makedirs(output_hist_dir, exist_ok=True)
-#         os.makedirs(output_scatter_dir, exist_ok=True)
-#         print(f"Dossiers créés :\n- Histogrammes : {output_hist_dir}\n- Scatter : {output_scatter_dir}")
-
-#         # Polluants et colonnes
-#         polluants_tous = ['NO2', 'PM10', 'O3', 'Somo 35', 'AOT 40']
-#         polluant_2009 = 'PM25'
-#         noms_colonnes = {
-#             'NO2': 'Moyenne annuelle de concentration de NO2 (ug/m3)',
-#             'PM10': 'Moyenne annuelle de concentration de PM10 (ug/m3)',
-#             'O3': 'Moyenne annuelle de concentration de O3 (ug/m3)',
-#             'Somo 35': 'Moyenne annuelle de somo 35 (ug/m3.jour)',
-#             'AOT 40': "Moyenne annuelle d'AOT 40 (ug/m3.heure)",
-#             'PM25': 'Moyenne annuelle de concentration de PM25 (ug/m3)'
-#         }
-
-#         années = sorted(data['Année'].unique())
-#         for année in années:
-#             print(f"\nTraitement de l'année {année}...")
-#             données_année = data[data['Année'] == année]
-            
-#             polluants_à_traiter = polluants_tous.copy()
-#             if année >= 2009:
-#                 polluants_à_traiter.append(polluant_2009)
-            
-#             for polluant in polluants_à_traiter:
-#                 colonne = noms_colonnes[polluant]
-#                 if colonne not in données_année.columns:
-#                     print(f"  Données non disponibles pour {polluant} en {année}")
-#                     continue
-                
-#                 try:
-#                     # Scatter plot
-#                     fig_scatter = create_pollution_scatter(données_année, insee_to_commune, polluant)
-#                     scatter_file = os.path.join(output_scatter_dir, f'{polluant}_scatter_{année}.html')
-#                     write_html(fig_scatter, scatter_file, auto_open=False, include_plotlyjs='cdn')
-                    
-#                     # Histogramme
-#                     fig_hist = create_pollution_histogram(données_année, polluant)
-#                     hist_file = os.path.join(output_hist_dir, f'{polluant}_histogram_{année}.html')
-#                     write_html(fig_hist, hist_file, auto_open=False, include_plotlyjs='cdn')
-                    
-#                     print(f"  ✓ Graphiques générés pour {polluant}")
-#                 except Exception as e:
-#                     print(f"  ✗ Erreur lors de la génération des graphiques pour {polluant} : {e}")
-
-#         print("\nToutes les visualisations ont été générées avec succès !")
-        
-#     except Exception as e:
-#         print(f"Une erreur s'est produite : {e}")
-
-
-# if __name__ == "__main__":
-#     main()
-
-# --- À AJOUTER À LA FIN DE TON main.py EXISTANT ---
-# create_sample_histograms.py
-
-
-import dash
-from dash import dcc, html, Input, Output
 import os
-import base64
-import webbrowser
-
-# ---------------------------
-# Configuration des chemins
-# ---------------------------
-output_dir = "output/FINAL_superposed_graphs_map"
-html_source_dir = "output_csv"
-histogram_dir = os.path.join("assets", "html_histograms")
-scatter_dir = os.path.join("assets", "scatter")
-
-# ---------------------------
-# Polluants et années
-# ---------------------------
-pollutants = ["NO2", "PM10", "O3", "somo 35", "PM25", "AOT 40"]
-years = list(range(2000, 2016))
-if 2006 in years:
-    years.remove(2006)
+import html
 
 
-
-
-# ---------------------------
-# Polluants et années
-# ---------------------------
-pollutants = ["NO2", "PM10", "O3", "somo 35", "PM25", "AOT 40"]
-years = list(range(2000, 2016))
-if 2006 in years:
-    years.remove(2006)
-
-# ---------------------------
-# Mapping pour correspondre au nom exact du fichier
-# ---------------------------
-pollutant_file_map = {
-    "NO2": "NO2",
-    "PM10": "PM10",
-    "O3": "O3",
-    "somo 35": "Somo 35",
-    "PM25": "PM25",
-    "AOT 40": "AOT 40"
-}
-
-
-# ---------------------------
-# Initialisation Dash
-# ---------------------------
-app = dash.Dash(__name__, title="Dashboard Pollution")
-
-# ---------------------------
-# Fonction page d'erreur
-# ---------------------------
-def create_error_page(message):
-    error_html = f"""
-    <html>
-    <body style="display: flex; justify-content: center; align-items: center; height: 100vh; flex-direction: column; font-family: Arial;">
-        <div style="text-align: center; padding: 40px;">
-            <h2 style="color: #e74c3c;">📊 Erreur</h2>
-            <p>{message}</p>
-        </div>
-    </body>
-    </html>
+def generate_dashboard():
     """
-    error_encoded = base64.b64encode(error_html.encode()).decode()
-    return f"data:text/html;base64,{error_encoded}"
+    Génère un tableau de bord statique (3 onglets): README, Carte, Graphiques.
+    Écrit le fichier dans ../output_csv/superposed_graphs_map/FINAL_dashboard.html
+    et référence les fichiers HTML déjà générés sous ../output/FINAL_superposed_graphs_map/.
+    """
+    script_dir = os.path.dirname(os.path.abspath(__file__))
+    workspace_root = os.path.abspath(os.path.join(script_dir, '..'))
 
-# ---------------------------
-# Layout
-# ---------------------------
-app.layout = html.Div([
-    # En-tête
-    html.Div([
-        html.H1("📊 Dashboard Pollution Atmosphérique - France", 
-                style={'textAlign': 'center', 'color': 'white', 'marginBottom': '10px'}),
-        html.P("Visualisation interactive des données de qualité de l'air (2000-2015)",
-               style={'textAlign': 'center', 'color': 'white', 'fontSize': '16px'})
-    ], style={'backgroundColor': '#2c3e50', 'padding': '15px', 'borderRadius': '10px', 'marginBottom': '20px'}),
-    
-    # Section Carte
-    html.Div([
-        html.H3("🗺️ Carte Interactive de la Pollution", style={'textAlign': 'center', 'color': '#2c3e50', 'marginBottom': '10px'}),
-        html.Iframe(
-            src="/assets/interactive_pollution_map.html",
-            style={'width': '100%', 'height': '700px', 'border': 'none', 'borderRadius': '8px'}
-        )
-    ], style={'backgroundColor': 'white', 'padding': '20px', 'borderRadius': '10px', 'marginBottom': '20px'}),
-    
-    # Section Graphiques (Histogrammes et Scatter)
-    html.Div([
-        html.H3("📊 Graphiques des Polluants", style={'textAlign': 'center', 'color': '#2c3e50', 'marginBottom': '20px'}),
-        
-        # Contrôles
-        html.Div([
-            html.Div([
-                html.Label("🧪 Polluant:", style={'fontWeight': 'bold', 'marginBottom': '5px'}),
-                dcc.Dropdown(
-                    id='pollutant-select',
-                    options=[{'label': p, 'value': p} for p in pollutants],
-                    value='NO2',
-                    clearable=False,
-                    style={'width': '100%'}
-                )
-            ], style={'width': '32%', 'display': 'inline-block', 'padding': '10px'}),
-            
-            html.Div([
-                html.Label("📅 Année:", style={'fontWeight': 'bold', 'marginBottom': '5px'}),
-                dcc.Slider(
-                    id='year-slider',
-                    min=0,
-                    max=len(years)-1,
-                    value=0,
-                    marks={i: str(year) for i, year in enumerate(years)},
-                    step=1
-                ),
-                html.Div(id='year-display', style={'textAlign': 'center', 'fontSize': '16px', 'fontWeight': 'bold', 'marginTop': '10px'})
-            ], style={'width': '32%', 'display': 'inline-block', 'padding': '10px'}),
-            
-            html.Div([
-                html.Label("📊 Type de graphique:", style={'fontWeight': 'bold', 'marginBottom': '5px'}),
-                dcc.RadioItems(
-                    id='graph-type',
-                    options=[{'label': 'Histogramme', 'value': 'histogram'},
-                             {'label': 'Scatter Plot', 'value': 'scatter'}],
-                    value='histogram',
-                    labelStyle={'display': 'inline-block', 'marginRight': '10px'}
-                )
-            ], style={'width': '32%', 'display': 'inline-block', 'padding': '10px'})
-        ]),
-        
-        # IFrame Graphique
-        html.Iframe(
-            id='graph-frame',
-            style={'width': '100%', 'height': '600px', 'border': 'none', 'borderRadius': '8px', 'marginTop': '20px'}
-        )
-    ], style={'backgroundColor': 'white', 'padding': '20px', 'borderRadius': '10px'})
-])
+    # Emplacements de sortie et des fichiers existants
+    output_dir = os.path.join(workspace_root, 'output_csv', 'superposed_graphs_map')
+    os.makedirs(output_dir, exist_ok=True)
+    dashboard_path = os.path.join(output_dir, 'FINAL_dashboard.html')
 
-# ---------------------------
-# Callbacks
-# ---------------------------
-@app.callback(
-    Output('year-display', 'children'),
-    Input('year-slider', 'value')
-)
-def update_year_display(year_index):
-    return f"Année: {years[year_index]}"
+    # Emplacements possibles des sorties existantes
+    candidates_base = [
+      os.path.join(script_dir, 'assets', 'output_csv', 'FINAL_superposed_graphs_map'),
+      os.path.join(script_dir, 'assets', 'maps'),
+      os.path.join(script_dir, 'assets'),
+      os.path.join(workspace_root, 'output', 'FINAL_superposed_graphs_map'),
+    ]
 
-@app.callback(
-    Output('graph-frame', 'src'),
-    [Input('pollutant-select', 'value'),
-     Input('year-slider', 'value'),
-     Input('graph-type', 'value')]
-)
-def update_graph(pollutant, year_index, graph_type):
-    year = years[year_index]
-    pollutant_clean = pollutant_file_map.get(pollutant, pollutant)
-    
-    if graph_type == 'histogram':
-        filename = f"{pollutant_clean}_histogram_{year}.html"
-        filepath = os.path.join(histogram_dir, filename)
-    else:
-        filename = f"{pollutant_clean}_scatter_{year}.html"
-        filepath = os.path.join(scatter_dir, filename)
-    
-    if os.path.exists(filepath):
+    def find_existing_file(possible_dirs, filename):
+      for d in possible_dirs:
+        p = os.path.join(d, filename)
+        if os.path.exists(p):
+          return p
+      return None
+
+    map_file = find_existing_file(
+      [
+        os.path.join(script_dir, 'assets', 'output_csv', 'FINAL_superposed_graphs_map'),
+        os.path.join(script_dir, 'assets', 'maps'),
+        os.path.join(script_dir, 'assets'),
+        os.path.join(workspace_root, 'output', 'FINAL_superposed_graphs_map'),
+      ],
+      'interactive_pollution_map.html'
+    )
+    hist_viewer = find_existing_file(candidates_base, 'FINAL_histogrammes_viewer.html')
+    scatter_viewer = find_existing_file(candidates_base, 'FINAL_superposed_scatter_plots.html')
+
+    # Chemins relatifs depuis le tableau de bord vers les fichiers ciblés
+    def to_rel(src_abs):
+      return os.path.relpath(os.path.dirname(src_abs), output_dir).replace('\\', '/') + '/' + os.path.basename(src_abs)
+
+    map_src = to_rel(map_file) if map_file else None
+    hist_src = to_rel(hist_viewer) if hist_viewer else None
+    scatter_src = to_rel(scatter_viewer) if scatter_viewer else None
+
+    # Contenu README
+    readme_path = os.path.join(script_dir, 'README.md')
+    readme_md = ''
+    if os.path.exists(readme_path):
         try:
-            with open(filepath, 'r', encoding='utf-8') as f:
-                html_content = f.read()
-            html_encoded = base64.b64encode(html_content.encode()).decode()
-            return f"data:text/html;base64,{html_encoded}"
-        except Exception as e:
-            return create_error_page(f"Erreur: {str(e)}")
+            with open(readme_path, 'r', encoding='utf-8') as f:
+                readme_md = f.read()
+        except Exception:
+            readme_md = '# README\nImpossible de lire README.md.'
     else:
-        return create_error_page(f"Fichier non trouvé: {filename}")
+        readme_md = '# README\nAucun fichier README.md trouvé dans le projet.'
 
-# ---------------------------
-# Lancer le serveur et ouvrir automatiquement le navigateur
-# ---------------------------
+    # Échapper pour JS string
+    readme_js = readme_md.replace('\\', '\\\\').replace('\n', '\\n').replace('"', '\\"')
+
+    # Messages d'erreur intégrés
+    def iframe_or_message(src, message):
+        if src:
+            return f'<iframe src="{src}" class="content-frame"></iframe>'
+        return f'<div class="missing">{html.escape(message)}</div>'
+
+    map_block = iframe_or_message(map_src, 'Carte introuvable: interactive_pollution_map.html')
+    hist_block = iframe_or_message(hist_src, 'Viewer histogrammes introuvable: FINAL_histogrammes_viewer.html')
+    scatter_block = iframe_or_message(scatter_src, 'Viewer scatter introuvable: FINAL_superposed_scatter_plots.html')
+
+    html_content = f"""
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <title>Dashboard Pollution - README | Carte | Graphiques</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <style>
+    :root {{
+      --bg: #f5f7fb; --surface: #ffffff; --text: #2c3e50; --muted: #6b7280;
+      --primary: #2563eb; --primary-600: #1d4ed8; --primary-700: #1e40af;
+      --border: #e5e7eb; --sidebar-width: 220px;
+    }}
+    * {{ box-sizing: border-box; }}
+    body {{ margin:0; font-family: -apple-system, Segoe UI, Roboto, Arial, sans-serif; background: var(--bg); color: var(--text); display: flex; height: 100vh; overflow: hidden; }}
+    .sidebar {{ width: var(--sidebar-width); background: var(--surface); border-right: 2px solid var(--border); display: flex; flex-direction: column; }}
+    .header {{ background: linear-gradient(135deg, var(--primary), var(--primary-700)); color:#fff; padding: 20px 16px; border-bottom: 1px solid rgba(255,255,255,0.1); }}
+    .header h1 {{ margin:0; font-size: 16px; font-weight: 600; line-height: 1.3; }}
+    .tabs {{ display:flex; flex-direction: column; gap:6px; padding: 16px 12px; flex: 1; }}
+    .tab-btn {{ padding:12px 14px; border:1px solid var(--border); background: #fff; color: var(--text); border-radius:8px; cursor:pointer; font-weight:600; font-size:14px; text-align: left; transition: all 0.2s; }}
+    .tab-btn:hover {{ background: #f9fafb; border-color: var(--primary-600); }}
+    .tab-btn.active {{ background: var(--primary); color:#fff; border-color: transparent; box-shadow: 0 2px 4px rgba(37,99,235,0.2); }}
+    .main-content {{ flex: 1; display: flex; flex-direction: column; overflow: hidden; }}
+    .container {{ flex: 1; padding: 0; overflow: hidden; }}
+    .card {{ background: var(--surface); border:1px solid var(--border); border-radius: 10px; box-shadow: 0 2px 8px rgba(16,24,40,0.04); padding: 20px; height: 100%; overflow: auto; }}
+    .card.map-card {{ padding: 0; overflow: hidden; }}
+    .content-frame {{ width: 100%; height: 100%; border: none; border-radius: 8px; }}
+    .missing {{ padding: 16px; color: #b91c1c; background: #fee2e2; border: 1px solid #fecaca; border-radius: 8px; }}
+    .readme {{ line-height: 1.6; color: var(--text); }}
+    .readme h1, .readme h2, .readme h3 {{ margin-top: 1.2em; }}
+    .readme pre {{ background:#0b1020; color:#e5e7eb; padding:12px; border-radius:8px; overflow:auto; }}
+    .subtabs {{ display:flex; gap:8px; margin-bottom: 12px; }}
+    .page {{ display: none; height: 100%; }}
+    .page.active {{ display: block; }}
+  </style>
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {{
+      // Tabs gestion
+      const pages = ['readme','map','graphs'];
+      function show(id) {{
+        pages.forEach(p => {{
+          document.getElementById('page-'+p).style.display = (p===id)?'block':'none';
+          document.getElementById('tab-'+p).classList.toggle('active', p===id);
+        }});
+      }}
+      window.switchTab = function(id) {{
+        pages.forEach(p => {{
+          const page = document.getElementById('page-'+p);
+          const tab = document.getElementById('tab-'+p);
+          if (p === id) {{
+            page.classList.add('active');
+            tab.classList.add('active');
+          }} else {{
+            page.classList.remove('active');
+            tab.classList.remove('active');
+          }}
+        }});
+      }};
+      window.switchTab('readme');
+
+      // Render README markdown
+      const md = "{readme_js}";
+      const target = document.getElementById('readme-content');
+      try {{ target.innerHTML = marked.parse(md); }} catch(e) {{ target.textContent = md; }}
+
+      // Graphs subtabs
+      const histBtn = document.getElementById('subtab-hist');
+      const scatBtn = document.getElementById('subtab-scat');
+      const frame = document.getElementById('graphs-frame');
+      histBtn?.addEventListener('click', function() {{
+        histBtn.classList.add('active'); scatBtn.classList.remove('active');
+        frame.src = '{hist_src if hist_src else ''}';
+      }});
+      scatBtn?.addEventListener('click', function() {{
+        scatBtn.classList.add('active'); histBtn.classList.remove('active');
+        frame.src = '{scatter_src if scatter_src else ''}';
+      }});
+      // Default subtab
+      if (histBtn && scatBtn) {{ histBtn.click(); }}
+    }});
+  </script>
+</head>
+<body>
+  <div class="sidebar">
+    <div class="header">
+      <h1>📊 Dashboard Pollution Atmosphérique France</h1>
+    </div>
+    <div class="tabs">
+      <button id="tab-readme" class="tab-btn" onclick="switchTab('readme')">📄 README</button>
+      <button id="tab-map" class="tab-btn" onclick="switchTab('map')">🗺️ Carte Interactive</button>
+      <button id="tab-graphs" class="tab-btn" onclick="switchTab('graphs')">📊 Graphiques</button>
+    </div>
+  </div>
+  <div class="main-content">
+    <div class="container">
+      <div id="page-readme" class="page card">
+        <div id="readme-content" class="readme"></div>
+      </div>
+      <div id="page-map" class="page card map-card">
+        {map_block}
+      </div>
+      <div id="page-graphs" class="page card">
+        <div class="subtabs">
+          <button id="subtab-hist" class="tab-btn">Histogrammes</button>
+          <button id="subtab-scat" class="tab-btn">Scatter Plots</button>
+        </div>
+        {('<div class="missing">Aucun viewer trouvé.</div>' if (not hist_src and not scatter_src) else '<iframe id="graphs-frame" class="content-frame"></iframe>')}
+    </div>
+  </div>
+</body>
+</html>
+"""
+
+    with open(dashboard_path, 'w', encoding='utf-8') as f:
+        f.write(html_content)
+
+    print("Dashboard généré:")
+    print(dashboard_path)
+    return dashboard_path
+
+
 if __name__ == '__main__':
-    url = "http://127.0.0.1:8050"
-    print("🌐 Démarrage du serveur Dash...")
-    print(f"📍 Accédez à: {url}")
-    
-    # Ouvre le navigateur automatiquement
-    webbrowser.open(url)
-    
-    # Lancer le serveur Dash
-    app.run(debug=True, host='127.0.0.1', port=8050, use_reloader=False) 
+    import webbrowser
+    dashboard_file = generate_dashboard()
+    webbrowser.open(f'file:///{dashboard_file.replace(os.sep, "/")}')

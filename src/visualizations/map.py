@@ -161,7 +161,7 @@ html_content = """
     
     #pollutant-control {
         position: absolute;
-        top: 120px;
+        top: 90px;
         right: 10px;
         background: white;
         padding: 15px;
@@ -170,7 +170,7 @@ html_content = """
         z-index: 1000;
         font-family: Arial, sans-serif;
         width: 200px;
-        max-height: 300px;
+        max-height: 280px;
         overflow-y: auto;
     }
     

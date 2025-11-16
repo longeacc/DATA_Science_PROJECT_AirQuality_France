@@ -240,4 +240,7 @@ def generate_dashboard():
 if __name__ == '__main__':
     import webbrowser
     dashboard_file = generate_dashboard()
-    webbrowser.open(f'file:///{dashboard_file.replace(os.sep, "/")}')
+    webbrowser.open(f'file:///{dashboard_file.replace(os.sep, "/")}') 
+
+
+a=1

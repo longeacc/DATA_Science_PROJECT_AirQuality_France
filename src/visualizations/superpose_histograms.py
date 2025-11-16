@@ -1,7 +1,9 @@
 import os
 
 def create_histograms_viewer():
-    
+    """
+    Create an HTML viewer for superposed histograms of air pollutants.
+    """
     output_dir = "output/FINAL_superposed_graphs_map"
     html_source_dir = "../output_csv"  # directory containing the histogram HTML files
 

@@ -2,10 +2,9 @@
 Script pour générer des graphiques de pollution en France.
 Crée des histogrammes et des scatter plots pour chaque polluant et année.
 """
-
+import webbrowser
 import os
 import html
-import webbrowser
 import pandas as pd
 from plotly.io import write_html
 from src.utils.common_functions import load_commune_mappings, load_data_for_year
